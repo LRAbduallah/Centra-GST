@@ -8,7 +8,7 @@ interface InvoicePreviewProps {
 }
 
 export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps) {
-  const { lines, subTotal, totalGst, grandTotal, cgst, sgst, cgstPct, sgstPct } = useMemo(
+  const { lines, subTotal, totalGst, grandTotal, roundOff, cgst, sgst, cgstPct, sgstPct } = useMemo(
     () => calcTotals(invoice.items || [], profile),
     [invoice.items, profile]
   );
@@ -147,20 +147,22 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
                 <td className="amount">₹{formatCurrency(subTotal)}</td>
               </tr>
               <tr>
-                <td className="label">GST Rs.</td>
-                <td className="amount">₹{formatCurrency(totalGst)}</td>
-              </tr>
-              <tr className="total-row">
-                <td className="label">Total</td>
-                <td className="amount">₹{formatCurrency(grandTotal)}</td>
-              </tr>
-              <tr>
-                <td className="label">CGST Rs. ({cgstPct}%):</td>
+                <td className="label">CGST ({cgstPct}%):</td>
                 <td className="amount">₹{formatCurrency(cgst)}</td>
               </tr>
               <tr>
-                <td className="label">SGST Rs. ({sgstPct}%):</td>
+                <td className="label">SGST ({sgstPct}%):</td>
                 <td className="amount">₹{formatCurrency(sgst)}</td>
+              </tr>
+              {Math.abs(roundOff) > 0.001 && (
+                <tr>
+                  <td className="label">Round Off</td>
+                  <td className="amount">{roundOff >= 0 ? '+' : '-'}₹{formatCurrency(Math.abs(roundOff))}</td>
+                </tr>
+              )}
+              <tr className="total-row">
+                <td className="label">Net Total</td>
+                <td className="amount">₹{formatCurrency(grandTotal)}</td>
               </tr>
             </tbody>
           </table>

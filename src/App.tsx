@@ -250,10 +250,13 @@ export default function App() {
   // Database path setup selection screen
   if (screen === 'db-setup') {
     return (
-      <DatabaseSetupScreen
-        onSetupComplete={handleDbSetupComplete}
-        showToast={showToast}
-      />
+      <div className="app-shell">
+        <DatabaseSetupScreen
+          onSetupComplete={handleDbSetupComplete}
+          showToast={showToast}
+        />
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </div>
     );
   }
 

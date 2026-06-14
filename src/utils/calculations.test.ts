@@ -130,4 +130,14 @@ describe('calcTotals()', () => {
     calcTotals(items, profileBase);
     expect(performance.now() - start).toBeLessThan(10);
   });
+
+  it('T8: calculates round-off and rounded grand total correctly', () => {
+    const items = [
+      { qty: 1, netRate: 100.25, gstPct: 18 }
+    ];
+    const t = calcTotals(items, profileBase);
+    expect(t.grandTotalRaw).toBeCloseTo(118.295);
+    expect(t.grandTotal).toBe(118);
+    expect(t.roundOff).toBeCloseTo(-0.295);
+  });
 });

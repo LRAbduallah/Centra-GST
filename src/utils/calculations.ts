@@ -33,7 +33,9 @@ export function calcTotals(items: any[], profile: any) {
     return { ...item, ...c };
   });
   
-  const grandTotal = subTotal + totalGst;
+  const grandTotalRaw = subTotal + totalGst;
+  const grandTotal = Math.round(grandTotalRaw);
+  const roundOff = grandTotal - grandTotalRaw;
   
   // corrected GST splits of total tax amount
   const cgst = totalGst * (cgstPct / (cgstPct + sgstPct || 1));
@@ -44,6 +46,8 @@ export function calcTotals(items: any[], profile: any) {
     subTotal,
     totalGst,
     grandTotal,
+    grandTotalRaw,
+    roundOff,
     cgst,
     sgst,
     cgstPct,

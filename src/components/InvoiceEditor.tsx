@@ -648,6 +648,14 @@ export default function InvoiceEditor({
             <span>SGST ({totals.sgstPct}%)</span>
             <span className="val">₹{totals.sgst.toFixed(2)}</span>
           </div>
+          {Math.abs(totals.roundOff) > 0.001 && (
+            <div className="totals-row">
+              <span>Round Off</span>
+              <span className="val">
+                {totals.roundOff >= 0 ? '+' : '-'}₹{Math.abs(totals.roundOff).toFixed(2)}
+              </span>
+            </div>
+          )}
           <div className="totals-row grand">
             <span>Grand Total</span>
             <span className="val">₹{totals.grandTotal.toFixed(2)}</span>

@@ -48,7 +48,7 @@ export default function DatabaseSetupScreen({ onSetupComplete, showToast }: Data
   };
 
   return (
-    <div className="startup-container">
+    <div className="startup-container" style={{ width: '100%', height: '100%' }}>
       <div className="startup-card" style={{ maxWidth: '640px', padding: '40px' }}>
         {/* Animated Brand Header */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
