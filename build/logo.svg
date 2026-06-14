@@ -19,9 +19,12 @@
     </filter>
   </defs>
 
-  <!-- Stylized letter 'C' in glowing orange-rose gradient -->
-  <path d="M62 34 C58 30, 48 30, 42 36 C36 42, 36 58, 42 64 C48 70, 58 70, 62 66" stroke="url(#accentGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <!-- Scaled group to make the logo fill the standard application icon size -->
+  <g transform="translate(50, 50) scale(2.0) translate(-50, -50)">
+    <!-- Stylized letter 'C' in glowing orange-rose gradient -->
+    <path d="M62 34 C58 30, 48 30, 42 36 C36 42, 36 58, 42 64 C48 70, 58 70, 62 66" stroke="url(#accentGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
 
-  <!-- Stylized letter 'G' inside in glowing crimson gradient -->
-  <path d="M54 44 H64 V56 C64 60, 58 64, 52 64 C46 64, 42 60, 42 54" stroke="url(#primaryGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    <!-- Stylized letter 'G' inside in glowing crimson gradient -->
+    <path d="M54 44 H64 V56 C64 60, 58 64, 52 64 C46 64, 42 60, 42 54" stroke="url(#primaryGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  </g>
 </svg>
