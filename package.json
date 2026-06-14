@@ -2,17 +2,18 @@
   "name": "invoice-forge",
   "version": "1.0.0",
   "description": "GST-compliant tax bill desktop application",
+  "author": "CentraGST Dev <rafiabullah0@gmail.com>",
   "main": "electron/main.js",
   "scripts": {
     "dev": "node scripts/dev.js",
     "build": "tsc && vite build",
-    "electron:build": "npm run build && electron-builder",
+    "electron:build": "npm run build && electron-builder --win --mac",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "postinstall": "electron-rebuild -f -w better-sqlite3",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "electron-builder install-app-deps"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
@@ -36,7 +37,6 @@
     "@vitest/coverage-v8": "^4.1.8",
     "electron": "^29.1.0",
     "electron-builder": "^24.13.3",
-    "electron-rebuild": "^3.2.9",
     "jsdom": "^29.1.1",
     "playwright-core": "^1.60.0",
     "typescript": "^5.2.2",
@@ -69,7 +69,12 @@
     },
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     }
   }

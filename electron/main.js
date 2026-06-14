@@ -117,6 +117,13 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // Disable DevTools and right-click context menu in production
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools();
+    });
+    mainWindow.webContents.on('context-menu', (e) => {
+      e.preventDefault();
+    });
   }
 
   // Save state on close/resize/move
