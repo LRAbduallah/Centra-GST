@@ -27,7 +27,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   printApp: async () => {
-    return await ipcRenderer.invoke('print-pdf');
+    window.print();
+    return { success: true };
   },
   
   db: {

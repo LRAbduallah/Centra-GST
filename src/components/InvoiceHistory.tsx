@@ -223,7 +223,7 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
           <p>
             {searchTerm.trim() || filterProfileId !== 'all'
               ? 'Try adjusting your search query or filters'
-              : 'Generate invoices in the New Invoice tab to see them here'}
+              : 'Generate invoices in the Invoice tab to see them here'}
           </p>
         </div>
       ) : (

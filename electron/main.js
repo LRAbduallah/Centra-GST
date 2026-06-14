@@ -85,15 +85,25 @@ function createWindow() {
 
 // IPC Handlers
 ipcMain.handle('save-file-dialog', async (event, { defaultPath, title, buttonLabel }) => {
+  let filters = [
+    { name: 'PDF Document', extensions: ['pdf'] },
+    { name: 'Image (PNG)', extensions: ['png'] },
+    { name: 'All Files', extensions: ['*'] }
+  ];
+
+  if (defaultPath && defaultPath.toLowerCase().endsWith('.png')) {
+    filters = [
+      { name: 'Image (PNG)', extensions: ['png'] },
+      { name: 'PDF Document', extensions: ['pdf'] },
+      { name: 'All Files', extensions: ['*'] }
+    ];
+  }
+
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: defaultPath || 'invoice.pdf',
     title: title || 'Save Document',
     buttonLabel: buttonLabel || 'Save',
-    filters: [
-      { name: 'PDF Document', extensions: ['pdf'] },
-      { name: 'Image (PNG)', extensions: ['png'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+    filters
   });
   return result;
 });
