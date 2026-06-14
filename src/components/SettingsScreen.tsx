@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Profile, Product } from '../types';
 import ProfileModal from './ProfileModal';
+import ConfirmModal from './ConfirmModal';
 import { db } from '../db';
 import { Plus, Edit2, Trash2, Download, Upload, Shield, CheckCircle, AlertTriangle } from 'lucide-react';
 
@@ -28,6 +29,13 @@ export default function SettingsScreen({
   const [activeTab, setActiveTab] = useState<'profiles' | 'catalog' | 'backup'>('profiles');
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'default';
+    onConfirm: () => void;
+  } | null>(null);
 
   // Catalog tab sub-states
   const [catEditingIndex, setCatEditingIndex] = useState<number | null>(null);
@@ -45,7 +53,7 @@ export default function SettingsScreen({
       showToast('Product updated!', 'success');
     } else {
       updatedCatalog.push({
-        id: Math.random().toString(36).substring(2, 9),
+        id: crypto.randomUUID(),
         ...catForm
       });
       showToast('Product added!', 'success');
@@ -57,11 +65,19 @@ export default function SettingsScreen({
   };
 
   const deleteCatalogItem = (index: number) => {
-    if (window.confirm('Delete this product from catalog?')) {
-      const updatedCatalog = catalog.filter((_, idx) => idx !== index);
-      onUpdateCatalog(updatedCatalog);
-      showToast('Product deleted.', 'success');
-    }
+    const item = catalog[index];
+    setConfirmModal({
+      title: 'Delete Product',
+      message: `Remove "${item?.name || 'this product'}" from the catalog? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+      onConfirm: () => {
+        setConfirmModal(null);
+        const updatedCatalog = catalog.filter((_, idx) => idx !== index);
+        onUpdateCatalog(updatedCatalog);
+        showToast('Product deleted.', 'success');
+      },
+    });
   };
 
   const editCatalogItem = (index: number) => {
@@ -119,7 +135,8 @@ export default function SettingsScreen({
           if (matches.length >= 1) {
             const name = matches[0]?.replace(/^"|"$/g, '').trim() || '';
             const hsn = matches[1]?.replace(/^"|"$/g, '').trim() || '';
-            const rate = matches[2]?.replace(/^"|"$/g, '').trim() || '';
+            const rateRaw = matches[2]?.replace(/^"|"$/g, '').trim() || '0';
+            const rate = isNaN(parseFloat(rateRaw)) ? '0' : rateRaw;
             const category = matches[3]?.replace(/^"|"$/g, '').trim() || '';
 
             if (name) {
@@ -179,69 +196,92 @@ export default function SettingsScreen({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!window.confirm('WARNING: Restoring backup will overwrite all existing local profiles, catalogs, and invoices. Proceed?')) {
-      return;
-    }
-
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (data && Array.isArray(data.profiles)) {
-          showToast('Restoring backup data...', 'success');
-          
-          // 1. Get all current profiles and delete them to clean the database (cascade deletes catalog/invoices)
-          const currentProfiles = await db.getProfiles();
-          for (const p of currentProfiles) {
-            await db.deleteProfile(p.id);
-          }
 
-          // 2. Restore profiles
-          for (const p of data.profiles) {
-            await db.upsertProfile(p.id, p);
-          }
-
-          // 3. Restore catalogs
-          if (data.catalogs) {
-            for (const [profileId, items] of Object.entries(data.catalogs)) {
-              if (Array.isArray(items)) {
-                for (const item of items) {
-                  const itemId = item.id || Math.random().toString(36).substring(2, 9);
-                  await db.upsertCatalogItem(itemId, profileId, { ...item, id: itemId });
-                }
-              }
-            }
-          }
-
-          // 4. Restore invoices
-          if (data.invoices) {
-            for (const [profileId, list] of Object.entries(data.invoices)) {
-              if (Array.isArray(list)) {
-                for (const inv of list) {
-                  await db.upsertInvoice(inv.id, profileId, inv);
-                }
-              }
-            }
-          }
-
-          // 5. Select active profile setting
-          if (data.profiles.length > 0) {
-            await db.setSetting('active_profile', data.profiles[0].id);
-          }
-
-          showToast('Backup restored successfully! App is reloading...', 'success');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } else {
-          showToast('Invalid backup file structure.', 'error');
+        // Validate backup structure before touching the live database
+        if (!data || !Array.isArray(data.profiles)) {
+          showToast('Invalid backup file: missing profiles array.', 'error');
+          return;
         }
+        const isValidProfile = (p: any) =>
+          p &&
+          typeof p.id === 'string' &&
+          typeof p.name === 'string' &&
+          typeof p.bizName === 'string';
+        if (!data.profiles.every(isValidProfile)) {
+          showToast('Invalid backup file: one or more profiles have missing required fields.', 'error');
+          return;
+        }
+
+        setConfirmModal({
+          title: 'Restore Database Backup',
+          message: `WARNING: Restoring this backup will permanently overwrite all existing profiles, catalogs, and invoices (${data.profiles.length} profile(s) found in backup). This cannot be undone.`,
+          confirmLabel: 'Restore Now',
+          variant: 'danger',
+          onConfirm: async () => {
+            setConfirmModal(null);
+            try {
+              showToast('Restoring backup data...', 'success');
+
+              // 1. Delete current profiles (cascade deletes catalog/invoices)
+              const currentProfiles = await db.getProfiles();
+              for (const p of currentProfiles) {
+                await db.deleteProfile(p.id);
+              }
+
+              // 2. Restore profiles
+              for (const p of data.profiles) {
+                await db.upsertProfile(p.id, p);
+              }
+
+              // 3. Restore catalogs
+              if (data.catalogs) {
+                for (const [profileId, items] of Object.entries(data.catalogs)) {
+                  if (Array.isArray(items)) {
+                    for (const item of items) {
+                      const itemId = item.id || crypto.randomUUID();
+                      await db.upsertCatalogItem(itemId, profileId, { ...item, id: itemId });
+                    }
+                  }
+                }
+              }
+
+              // 4. Restore invoices
+              if (data.invoices) {
+                for (const [profileId, list] of Object.entries(data.invoices)) {
+                  if (Array.isArray(list)) {
+                    for (const inv of list) {
+                      await db.upsertInvoice(inv.id, profileId, inv);
+                    }
+                  }
+                }
+              }
+
+              // 5. Set active profile
+              if (data.profiles.length > 0) {
+                await db.setSetting('active_profile', data.profiles[0].id);
+              }
+
+              showToast('Backup restored successfully! App is reloading...', 'success');
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } catch (err) {
+              console.error('Backup restore failed:', err);
+              showToast('Error restoring backup. Check the console for details.', 'error');
+            }
+          },
+        });
       } catch (err) {
-        console.error('Backup restore failed:', err);
+        console.error('Backup parse failed:', err);
         showToast('Error reading backup file. Make sure it is valid JSON.', 'error');
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -310,9 +350,16 @@ export default function SettingsScreen({
                         <button
                           className="btn btn-danger-ghost btn-sm"
                           onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete profile "${p.name}"? This action cannot be undone.`)) {
-                              onDeleteProfile(p.id);
-                            }
+                            setConfirmModal({
+                              title: 'Delete Business Profile',
+                              message: `Are you sure you want to delete the profile "${p.name}"? All invoices and catalog data linked to this profile will also be permanently deleted.`,
+                              confirmLabel: 'Delete Profile',
+                              variant: 'danger',
+                              onConfirm: () => {
+                                setConfirmModal(null);
+                                onDeleteProfile(p.id);
+                              },
+                            });
                           }}
                         >
                           <Trash2 size={12} /> Delete
@@ -527,6 +574,18 @@ export default function SettingsScreen({
             />
           </div>
         </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          variant={confirmModal.variant}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
       )}
     </div>
   );

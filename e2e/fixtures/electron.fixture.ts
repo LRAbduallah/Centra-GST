@@ -81,6 +81,29 @@ export const test = base.extend<ElectronFixture>({
 export { expect };
 
 /**
+ * Click an element that triggers the ConfirmModal, then confirm it.
+ * @param page - Playwright page
+ * @param trigger - Locator for the button/element that opens the modal
+ * @param confirmLabel - Label on the confirm button inside the modal (default: 'Confirm')
+ */
+export async function confirmModal(page: Page, trigger: any, confirmLabel = 'Confirm') {
+  await trigger.click();
+  // Wait for the ConfirmModal overlay to appear
+  await page.waitForSelector('.modal-overlay', { timeout: 5_000 });
+  // Click the confirm button by its text label
+  await page.locator(`.modal-overlay button:has-text("${confirmLabel}")`).last().click();
+  // Wait for the modal to close
+  await page.waitForSelector('.modal-overlay', { state: 'hidden', timeout: 5_000 }).catch(() => {});
+}
+
+/**
+ * Click the "New Invoice" button and confirm the ConfirmModal that appears.
+ */
+export async function clickNewInvoice(page: Page) {
+  await confirmModal(page, page.locator('button:has-text("New Invoice")'), 'Yes, New Invoice');
+}
+
+/**
  * Completes the 4-step ProfileModal wizard using exact placeholder values.
  *
  * Step 0 – Business Identity  : Profile Label, Business Name

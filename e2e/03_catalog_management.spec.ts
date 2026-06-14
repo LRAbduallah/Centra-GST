@@ -2,7 +2,7 @@
  * E2E: Catalog Management
  * Tests adding, editing, deleting products and using the catalog browser in invoice editor.
  */
-import { test, expect, fillProfileWizard } from './fixtures/electron.fixture';
+import { test, expect, fillProfileWizard, confirmModal } from './fixtures/electron.fixture';
 
 /** Navigate to Settings → Catalog tab via the sidebar nav items */
 async function goToSettingsCatalog(page: any) {
@@ -56,9 +56,12 @@ test.describe('Catalog Management', () => {
     await page.locator('[placeholder="e.g. 1500"]').fill('100');
     await page.locator('button:has-text("Add Product")').click();
     await page.waitForSelector('.catalog-grid h4:has-text("Delete Me Lens")');
-    // Accept the confirm dialog
-    page.on('dialog', (dialog: any) => dialog.accept());
-    await page.locator('.catalog-row-item .btn-danger-ghost').first().click();
+    // Click the danger delete button — ConfirmModal will appear, confirm it
+    await confirmModal(
+      page,
+      page.locator('.catalog-row-item .btn-danger-ghost').first(),
+      'Delete'
+    );
     await expect(page.locator('.catalog-grid h4:has-text("Delete Me Lens")')).not.toBeVisible({ timeout: 3_000 });
     await expect(page.locator('.toast-message.success').last()).toBeVisible({ timeout: 3_000 });
   });

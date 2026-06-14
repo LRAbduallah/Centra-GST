@@ -107,7 +107,11 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     fireEvent.change(rateInput, { target: { value: '100' } });
     await userEvent.click(screen.getByText(/Generate Invoice/i));
     await waitFor(() => screen.getByText(/New Invoice/i));
+    // Click "New Invoice" — this opens the ConfirmModal
     await userEvent.click(screen.getByText(/New Invoice/i));
+    // Confirm inside the modal
+    await waitFor(() => screen.getByText(/Yes, New Invoice/i));
+    await userEvent.click(screen.getByText(/Yes, New Invoice/i));
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/JOHN DOE/i)).toHaveValue('');
     });

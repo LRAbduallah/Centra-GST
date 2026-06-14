@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Profile, Product, LineItem, Invoice } from '../types';
 import InvoicePreview from './InvoicePreview';
+import ConfirmModal from './ConfirmModal';
 import { db } from '../db';
 import { calcTotals } from '../utils/calculations';
 import { Plus, Printer, Download, FileText, Image as ImageIcon, RotateCcw, Save, X, Search, AlertTriangle } from 'lucide-react';
@@ -61,6 +62,13 @@ export default function InvoiceEditor({
   const [activeCatalogRow, setActiveCatalogRow] = useState<number | null>(null);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [isGenerated, setIsGenerated] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'default';
+    onConfirm: () => void;
+  } | null>(null);
 
   // Resize handler for splitting panels
   const [editorWidth, setEditorWidth] = useState(500);
@@ -129,7 +137,7 @@ export default function InvoiceEditor({
         !firstItem.netRate;
 
       const newItems = selectedModalProducts.map((prod) => ({
-        id: Math.random().toString(36).substring(2, 9),
+        id: crypto.randomUUID(),
         hsn: prod.hsn || '',
         description: prod.name,
         qty: 1,
@@ -173,7 +181,7 @@ export default function InvoiceEditor({
           !firstItem.netRate;
 
         const newItem = {
-          id: Math.random().toString(36).substring(2, 9),
+          id: crypto.randomUUID(),
           hsn: pendingCatalogAdd.hsn || '',
           description: pendingCatalogAdd.name,
           qty: 1,
@@ -221,7 +229,7 @@ export default function InvoiceEditor({
       items: [
         ...prev.items,
         {
-          id: Math.random().toString(36).substring(2, 9),
+          id: crypto.randomUUID(),
           hsn: '',
           description: '',
           qty: 1,
@@ -253,11 +261,18 @@ export default function InvoiceEditor({
 
   // Reset editor state
   const handleReset = () => {
-    if (window.confirm('Are you sure you want to clear current invoice fields?')) {
-      setInv(createInitialState(profile));
-      setIsGenerated(false);
-      showToast('Form cleared', 'success');
-    }
+    setConfirmModal({
+      title: 'Clear Invoice Form',
+      message: 'Are you sure you want to clear all current invoice fields? This cannot be undone.',
+      confirmLabel: 'Clear Form',
+      variant: 'danger',
+      onConfirm: () => {
+        setConfirmModal(null);
+        setInv(createInitialState(profile));
+        setIsGenerated(false);
+        showToast('Form cleared', 'success');
+      },
+    });
   };
 
   // Autocomplete selections
@@ -282,9 +297,16 @@ export default function InvoiceEditor({
   };
 
   // Save/Generate Action
+  const DATE_REGEX = /^\d{2}-\d{2}-\d{4}$/;
+
   const handleGenerate = async () => {
     if (!inv.customerName.trim()) {
       showToast('Customer name is required', 'error');
+      return;
+    }
+
+    if (!DATE_REGEX.test(inv.date)) {
+      showToast('Invalid date format — use DD-MM-YYYY (e.g. 13-06-2026)', 'error');
       return;
     }
     
@@ -296,7 +318,7 @@ export default function InvoiceEditor({
     }
 
     const savedInvoice: Invoice = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: crypto.randomUUID(),
       profileId: profile.id,
       customerName: inv.customerName,
       mobile: inv.mobile,
@@ -320,7 +342,7 @@ export default function InvoiceEditor({
 
       if (!catalogNameMap.has(cleanName.toLowerCase())) {
         const newProduct: Product = {
-          id: Math.random().toString(36).substring(2, 9),
+          id: crypto.randomUUID(),
           name: cleanName,
           hsn: item.hsn || '',
           rate: String(item.netRate || '0'),
@@ -730,9 +752,18 @@ export default function InvoiceEditor({
           ) : (
             <>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => {
-                setInv(createInitialState(profile));
-                setIsGenerated(false);
-                showToast('Ready for new invoice', 'success');
+                setConfirmModal({
+                  title: 'Start New Invoice',
+                  message: 'Have you exported or saved the current invoice (PDF/Image/Print)? Starting a new invoice will clear the current form.',
+                  confirmLabel: 'Yes, New Invoice',
+                  variant: 'default',
+                  onConfirm: () => {
+                    setConfirmModal(null);
+                    setInv(createInitialState(profile));
+                    setIsGenerated(false);
+                    showToast('Ready for new invoice', 'success');
+                  },
+                });
               }}>
                 <Plus size={14} /> New Invoice
               </button>
@@ -871,6 +902,18 @@ export default function InvoiceEditor({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          variant={confirmModal.variant}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
       )}
     </div>
   );

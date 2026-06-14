@@ -2,7 +2,7 @@
  * E2E: Invoice Creation Flow
  * Tests the full invoice creation cycle from customer details to saved history entry.
  */
-import { test, expect, fillProfileWizard } from './fixtures/electron.fixture';
+import { test, expect, fillProfileWizard, clickNewInvoice } from './fixtures/electron.fixture';
 
 test.describe('Invoice Creation Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('Invoice Creation Flow', () => {
     await page.locator('[placeholder="0.00"]').first().fill('100');
     await page.click('button:has-text("Generate Invoice")');
     await page.waitForSelector('.toast-message.success:has-text("Invoice generated")', { timeout: 5_000 });
-    await page.click('button:has-text("New Invoice")');
+    await clickNewInvoice(page);
     const topbarAfter = await page.locator('.topbar-info').textContent();
     expect(topbarAfter).not.toBe(topbarBefore);
   });

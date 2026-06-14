@@ -14,6 +14,7 @@ export interface ToastMessage {
   id: number;
   msg: string;
   type?: 'success' | 'error';
+  duration?: number; // ms — auto-set based on type if omitted
 }
 
 export default function App() {
@@ -233,10 +234,11 @@ export default function App() {
     ensureActiveProfile();
   }, [profiles, isLoaded, screen]);
 
-  // Toast utility
+  // Toast utility — errors linger for 6 s, success/info for 3 s
   const showToast = (msg: string, type?: 'success' | 'error') => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, msg, type }]);
+    const duration = type === 'error' ? 6000 : 3000;
+    setToasts((prev) => [...prev, { id, msg, type, duration }]);
   };
 
   const removeToast = (id: number) => {
@@ -474,10 +476,12 @@ function ToastContainer({
 }
 
 function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: () => void }) {
+  const duration = toast.duration ?? (toast.type === 'error' ? 6000 : 3000);
+
   useEffect(() => {
-    const timer = setTimeout(onDone, 3000);
+    const timer = setTimeout(onDone, duration);
     return () => clearTimeout(timer);
-  }, [onDone]);
+  }, [onDone, duration]);
 
   return (
     <div className={`toast-message ${toast.type || ''}`}>
@@ -509,7 +513,26 @@ function ToastItem({ toast, onDone }: { toast: ToastMessage; onDone: () => void 
           />
         </svg>
       )}
-      {toast.msg}
+      <span style={{ flex: 1 }}>{toast.msg}</span>
+      <button
+        onClick={onDone}
+        title="Dismiss"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'inherit',
+          opacity: 0.55,
+          padding: '0 0 0 10px',
+          display: 'flex',
+          alignItems: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   );
 }

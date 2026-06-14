@@ -84,20 +84,25 @@ describe('SettingsScreen — Catalog CRUD', () => {
   });
 
   it('SC5: Deleting a product (confirmed) calls onUpdateCatalog without it', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderSettings();
     await openCatalogTab();
     // Delete buttons are .btn-danger-ghost in catalog-row-item
     const deleteBtns = document.querySelectorAll('.catalog-row-item .btn-danger-ghost');
     expect(deleteBtns.length).toBeGreaterThan(0);
     fireEvent.click(deleteBtns[0]);
+    // ConfirmModal appears — click the "Delete" confirm button
+    await waitFor(() => screen.getByText(/Remove.*from the catalog/i));
+    const confirmBtn = screen.getByRole('button', { name: /^Delete$/i });
+    await userEvent.click(confirmBtn);
     // onUpdateCatalog should be called with the first product removed
-    expect(onUpdateCatalog).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ name: 'Rimless Frame' })])
-    );
-    expect(onUpdateCatalog.mock.calls[0][0]).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: 'Anti-Reflective Lens' })])
-    );
+    await waitFor(() => {
+      expect(onUpdateCatalog).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ name: 'Rimless Frame' })])
+      );
+      expect(onUpdateCatalog.mock.calls[0][0]).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: 'Anti-Reflective Lens' })])
+      );
+    });
     expect(showToast).toHaveBeenCalledWith('Product deleted.', 'success');
   });
 

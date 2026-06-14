@@ -2,7 +2,7 @@
  * E2E: Backup & Restore
  * Tests JSON full backup export, restore flow, and CSV catalog import.
  */
-import { test, expect, fillProfileWizard } from './fixtures/electron.fixture';
+import { test, expect, fillProfileWizard, clickNewInvoice, confirmModal } from './fixtures/electron.fixture';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
@@ -18,7 +18,8 @@ test.describe('Backup & Restore', () => {
     await page.locator('[placeholder="0.00"]').first().fill('1000');
     await page.click('button:has-text("Generate Invoice")');
     await page.waitForSelector('.toast-message.success:has-text("Invoice generated")');
-    await page.click('button:has-text("New Invoice")');
+    // Dismiss the ConfirmModal so no overlay blocks subsequent test actions
+    await clickNewInvoice(page);
   });
 
   test('E28: Export JSON backup triggers download and shows success toast', async ({ page }) => {
@@ -36,9 +37,12 @@ test.describe('Backup & Restore', () => {
   test('E29: Deleting an invoice removes it from history', async ({ page }) => {
     await page.click('text=Invoice History');
     await expect(page.locator('text=BACKUP CUSTOMER')).toBeVisible({ timeout: 3_000 });
-    // Confirm + delete
-    page.on('dialog', (dialog) => dialog.accept());
-    await page.locator('[title*="Delete Invoice"]').first().click();
+    // Click delete — ConfirmModal will appear — then confirm it
+    await confirmModal(
+      page,
+      page.locator('[title*="Delete Invoice"]').first(),
+      'Delete'
+    );
     await expect(page.locator('text=Invoice deleted')).toBeVisible({ timeout: 3_000 });
     await expect(page.locator('text=BACKUP CUSTOMER')).not.toBeVisible({ timeout: 3_000 });
   });

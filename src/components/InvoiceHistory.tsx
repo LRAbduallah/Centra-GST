@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Profile, Invoice } from '../types';
 import InvoicePreview from './InvoicePreview';
+import ConfirmModal from './ConfirmModal';
 import { db } from '../db';
 import { Eye, FileText, Image as ImageIcon, Trash2, Printer, Search, X } from 'lucide-react';
 
@@ -16,6 +17,11 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [confirmModal, setConfirmModal] = useState<{
+    message: string;
+    title: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Load invoices asynchronously from SQLite DB layer
   useEffect(() => {
@@ -48,16 +54,21 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
 
   // Delete invoice
   const handleDeleteInvoice = async (invToDelete: Invoice) => {
-    if (window.confirm(`Are you sure you want to delete invoice ${invToDelete.invoiceNo} for ${invToDelete.customerName}?`)) {
-      try {
-        await db.deleteInvoice(invToDelete.id);
-        showToast('Invoice deleted from history.', 'success');
-        setRefreshTrigger((t) => t + 1);
-      } catch (err) {
-        console.error('Failed to delete invoice:', err);
-        showToast('Error deleting invoice', 'error');
-      }
-    }
+    setConfirmModal({
+      title: 'Delete Invoice',
+      message: `Are you sure you want to permanently delete invoice ${invToDelete.invoiceNo} for ${invToDelete.customerName}? This cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await db.deleteInvoice(invToDelete.id);
+          showToast('Invoice deleted from history.', 'success');
+          setRefreshTrigger((t) => t + 1);
+        } catch (err) {
+          console.error('Failed to delete invoice:', err);
+          showToast('Error deleting invoice', 'error');
+        }
+      },
+    });
   };
 
   // Document Exports
@@ -340,6 +351,17 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
             </div>
           </div>
         </div>
+      )}
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
       )}
     </div>
   );

@@ -2,7 +2,7 @@
  * E2E: Multiple Business Profiles
  * Tests profile switching, isolated catalogs, and cross-profile invoice history.
  */
-import { test, expect, fillProfileWizard } from './fixtures/electron.fixture';
+import { test, expect, fillProfileWizard, clickNewInvoice } from './fixtures/electron.fixture';
 
 /** Navigate to Settings → Profiles tab */
 async function goToSettingsProfiles(page: any) {
@@ -77,8 +77,8 @@ test.describe('Multiple Business Profiles', () => {
     await page.locator('[placeholder="0.00"]').first().fill('100');
     await page.click('button:has-text("Generate Invoice")');
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
-    // Add profile 2
-    await page.click('button:has-text("New Invoice")');
+    // Add profile 2 — dismiss ConfirmModal first
+    await clickNewInvoice(page);
     await goToSettingsProfiles(page);
     await page.locator('.settings-card button:has-text("Add Business")').click();
     await fillProfileWizard(page, { name: 'SecondBiz', invoicePrefix: 'SB' });
@@ -103,7 +103,7 @@ test.describe('Multiple Business Profiles', () => {
     await page.locator('[placeholder="0.00"]').first().fill('100');
     await page.click('button:has-text("Generate Invoice")');
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
-    await page.click('button:has-text("New Invoice")');
+    await clickNewInvoice(page);
     await goToSettingsProfiles(page);
     await page.locator('.settings-card button:has-text("Add Business")').click();
     await fillProfileWizard(page, { name: 'FilterBiz', invoicePrefix: 'FB' });

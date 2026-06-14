@@ -138,17 +138,21 @@ describe('InvoiceHistory', () => {
   });
 
   it('IH9: Delete invoice removes it from the list', async () => {
-    // Mock window.confirm to auto-accept
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockDb.deleteInvoice.mockResolvedValue(undefined);
     renderHistory();
     const deleteButtons = await screen.findAllByTitle(/Delete Invoice/i);
     await userEvent.click(deleteButtons[0]);
-    // After delete, showToast should be called
-    expect(showToast).toHaveBeenCalledWith(
-      expect.stringContaining('deleted'),
-      'success'
-    );
+    // ConfirmModal appears — click the danger "Delete" confirm button
+    await waitFor(() => screen.getByText(/permanently delete invoice/i));
+    const confirmBtn = screen.getByRole('button', { name: /^Delete$/i });
+    await userEvent.click(confirmBtn);
+    // After confirming, showToast should be called with success
+    await waitFor(() => {
+      expect(showToast).toHaveBeenCalledWith(
+        expect.stringContaining('deleted'),
+        'success'
+      );
+    });
   });
 
   it('IH10: Invoices sorted newest first', async () => {

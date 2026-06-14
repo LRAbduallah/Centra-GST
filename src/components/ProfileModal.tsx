@@ -33,7 +33,7 @@ export default function ProfileModal({ profile, onSave, onCancel }: ProfileModal
   const [state, setState] = useState<Profile>(() => {
     if (profile) return { ...profile };
     return {
-      id: Math.random().toString(36).substring(2, 9),
+      id: crypto.randomUUID(),
       ...DEFAULT_PROFILE,
     } as Profile;
   });
@@ -54,18 +54,35 @@ export default function ProfileModal({ profile, onSave, onCancel }: ProfileModal
     });
   };
 
-  // Handle logo upload
+  // Handle logo upload — compress to max 400px JPEG before storing
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        updateField('logo', event.target.result as string);
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const MAX = 400;
+      let w = img.width;
+      let h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) {
+          h = Math.round((h * MAX) / w);
+          w = MAX;
+        } else {
+          w = Math.round((w * MAX) / h);
+          h = MAX;
+        }
       }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, w, h);
+      updateField('logo', canvas.toDataURL('image/jpeg', 0.75));
     };
-    reader.readAsDataURL(file);
+    img.src = objectUrl;
   };
 
   const removeLogo = (e: React.MouseEvent) => {
@@ -75,14 +92,16 @@ export default function ProfileModal({ profile, onSave, onCancel }: ProfileModal
   };
 
   // Validate fields for each step
+  const GSTIN_REGEX = /^\d{2}[A-Z]{5}\d{4}[A-Z][A-Z\d]Z[A-Z\d]$/;
+
   const canGoNext = () => {
     if (step === 0) {
       return state.name.trim() !== '' && state.bizName.trim() !== '';
     }
     if (step === 1) {
-      // Basic GST format verification: 15 chars
-      // We warn or block if empty, let's just make it required
-      return state.gstNo.trim() !== '' && state.address1.trim() !== '';
+      // Validate 15-char GSTIN format
+      if (!GSTIN_REGEX.test(state.gstNo.trim())) return false;
+      return state.address1.trim() !== '';
     }
     if (step === 2) {
       // GST rates validation: CGST + SGST must equal GST Rate
@@ -226,6 +245,11 @@ export default function ProfileModal({ profile, onSave, onCancel }: ProfileModal
                 value={state.gstNo}
                 onChange={(e) => updateField('gstNo', e.target.value.toUpperCase())}
               />
+              {state.gstNo.trim().length > 0 && !GSTIN_REGEX.test(state.gstNo.trim()) && (
+                <p style={{ color: '#f59e0b', fontSize: '11px', marginTop: '5px', fontWeight: 500 }}>
+                  ⚠ Format: 2 digits + 5 letters + 4 digits + letter + alphanumeric + Z + alphanumeric (e.g. 33AAYFV2352E1ZZ)
+                </p>
+              )}
             </div>
 
             <div className="form-group">
