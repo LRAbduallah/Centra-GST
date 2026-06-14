@@ -62,6 +62,32 @@ export default function InvoiceEditor({
   const [catalogSearch, setCatalogSearch] = useState('');
   const [isGenerated, setIsGenerated] = useState(false);
 
+  // Resize handler for splitting panels
+  const [editorWidth, setEditorWidth] = useState(500);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = editorWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const delta = moveEvent.clientX - startX;
+      const maxW = Math.max(500, window.innerWidth - 400);
+      const newWidth = Math.max(380, Math.min(maxW, startWidth + delta));
+      setEditorWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+  };
+
   // Catalog Browser Modal States
   const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
   const [modalSearch, setModalSearch] = useState('');
@@ -428,8 +454,36 @@ export default function InvoiceEditor({
 
   return (
     <div className="invoice-editor">
+      <style>{`
+        .resize-handle {
+          width: 8px;
+          background-color: transparent;
+          cursor: col-resize;
+          z-index: 10;
+          transition: background-color var(--transition-fast);
+          position: relative;
+          align-self: stretch;
+          flex-shrink: 0;
+        }
+        .resize-handle::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 3px;
+          width: 2px;
+          background-color: var(--border-color);
+          transition: background-color var(--transition-fast), width var(--transition-fast), left var(--transition-fast);
+        }
+        .resize-handle:hover::after,
+        .resize-handle:active::after {
+          background-color: var(--color-primary);
+          width: 4px;
+          left: 2px;
+        }
+      `}</style>
       {/* Editor Form */}
-      <div className="editor-form-panel">
+      <div className="editor-form-panel" style={{ width: editorWidth, minWidth: editorWidth, maxWidth: editorWidth }}>
         
         {/* Section: Customer Details */}
         <div className="form-section">
@@ -695,6 +749,12 @@ export default function InvoiceEditor({
           )}
         </div>
       </div>
+
+      {/* Resizer Handle */}
+      <div 
+        className="resize-handle"
+        onMouseDown={handleMouseDown}
+      />
 
       {/* Editor Live Preview */}
       <div className="preview-interactive-panel">
