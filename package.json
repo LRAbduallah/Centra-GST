@@ -49,8 +49,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "blueocean",
-        "repo": "invoice-forge"
+        "owner": "LRAbduallah",
+        "repo": "Centra-GST"
       }
     ],
     "directories": {
