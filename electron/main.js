@@ -2,6 +2,12 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+// Allow E2E tests to override the userData path for isolation
+if (process.env.ELECTRON_USER_DATA) {
+  app.setPath('userData', process.env.ELECTRON_USER_DATA);
+}
+
+const isTest = process.env.NODE_ENV === 'test';
 let mainWindow;
 
 // Track window dimensions state
@@ -45,8 +51,8 @@ function createWindow() {
     backgroundColor: '#0f0f0f',
   });
 
-  // Load app (dev server or production build)
-  const isDev = !app.isPackaged;
+  // Load app: test mode loads built dist; dev mode loads Vite dev server; production loads dist
+  const isDev = !app.isPackaged && !isTest;
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     // Open DevTools in dev mode

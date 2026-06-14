@@ -129,11 +129,11 @@ export default function InvoiceEditor({
     setShowCatalogBrowser(false);
   };
 
-  // Sync with profile changes
+  // Sync with profile changes (reset only when switching profiles)
   useEffect(() => {
     setInv(createInitialState(profile));
     setIsGenerated(false);
-  }, [profile]);
+  }, [profile.id]);
 
   // Sync pending catalog add from Settings
   useEffect(() => {

@@ -23,7 +23,11 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* Test support */
+    "types": ["vitest/globals"]
   },
-  "include": ["src", "electron"]
+  "include": ["src", "electron", "e2e", "vitest.setup.ts"]
 }
+

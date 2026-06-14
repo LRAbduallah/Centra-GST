@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "node scripts/dev.js",
     "build": "tsc && vite build",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "html2canvas": "^1.4.1",
@@ -16,13 +20,22 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/testing-library__jest-dom": "^5.14.9",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^4.1.8",
     "electron": "^29.1.0",
     "electron-builder": "^24.13.3",
+    "jsdom": "^29.1.1",
+    "playwright-core": "^1.60.0",
     "typescript": "^5.2.2",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vitest": "^4.1.8"
   },
   "build": {
     "appId": "com.invoiceforge.app",

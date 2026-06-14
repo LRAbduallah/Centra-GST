@@ -33,3 +33,7 @@ Desktop.ini
 # Logs
 logs/
 *.log
+
+/test-results
+/playwright-report
+/coverage
