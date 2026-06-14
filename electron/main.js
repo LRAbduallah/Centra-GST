@@ -101,6 +101,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 700,
     title: 'CentraGST Suite',
+    icon: path.join(__dirname, '../build/icon.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
