@@ -48,101 +48,42 @@ export default function DatabaseSetupScreen({ onSetupComplete, showToast }: Data
   };
 
   return (
-    <div className="startup-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'radial-gradient(circle at 50% 50%, #1e1e24 0%, #0f0f12 100%)', padding: '24px' }}>
-      <div className="glass-card" style={{
-        maxWidth: '720px',
-        width: '100%',
-        background: 'rgba(30, 30, 35, 0.45)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '48px',
-        textAlign: 'center',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-      }}>
+    <div className="startup-container">
+      <div className="startup-card" style={{ maxWidth: '640px', padding: '40px' }}>
         {/* Animated Brand Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          width: '64px',
-          height: '64px',
-          borderRadius: 'var(--radius-md)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '24px',
-          boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)'
-        }}>
-          <Database size={32} color="#fff" />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="db-logo-icon" style={{
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, hsl(354, 70%, 35%) 100%)',
+            width: '56px',
+            height: '56px',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '20px',
+            boxShadow: '0 8px 24px hsla(354, 70%, 45%, 0.25)'
+          }}>
+            <Database size={28} color="#fff" />
+          </div>
+
+          <h2>Welcome to InvoiceForge</h2>
+          <p className="subtitle" style={{ maxWidth: '480px', margin: '8px auto 32px auto', lineHeight: '1.6' }}>
+            Select where you would like to store your local SQLite3 database. All your business profiles, settings, and invoices will be stored securely at this location.
+          </p>
         </div>
 
-        <h1 style={{
-          fontSize: '32px',
-          fontWeight: 800,
-          color: '#ffffff',
-          letterSpacing: '-0.5px',
-          margin: '0 0 8px 0',
-          background: 'linear-gradient(to bottom, #ffffff 60%, #a1a1aa 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>
-          Welcome to InvoiceForge
-        </h1>
-        <p style={{
-          color: 'var(--color-text-muted)',
-          fontSize: '15px',
-          maxWidth: '460px',
-          lineHeight: '1.6',
-          margin: '0 0 40px 0'
-        }}>
-          Select where you would like to store your local SQLite3 database. All your business profiles, settings, and invoices will be stored securely at this location.
-        </p>
-
         {/* Option Selection Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '24px',
-          width: '100%',
-          marginBottom: '32px'
-        }}>
+        <div className="startup-grid" style={{ gap: '16px', marginBottom: '24px' }}>
           {/* Card A: Create Database */}
           <div 
             onClick={handleCreateDb}
             className="db-setup-card"
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              borderRadius: 'var(--radius-md)',
-              padding: '32px 24px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
           >
-            <div className="icon-wrapper" style={{
-              background: 'rgba(59, 130, 246, 0.1)',
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '16px',
-              color: '#3b82f6',
-              transition: 'all 0.3s ease'
-            }}>
+            <div className="icon-wrapper">
               <FilePlus size={22} />
             </div>
-            <h3 style={{ color: '#ffffff', fontSize: '16px', fontWeight: 700, margin: '0 0 8px 0' }}>
-              Create New Database
-            </h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '12.5px', lineHeight: '1.5', margin: 0 }}>
+            <h3>Create New Database</h3>
+            <p>
               Choose a folder on your computer to save a clean, new database file. Best for fresh setups.
             </p>
           </div>
@@ -151,68 +92,83 @@ export default function DatabaseSetupScreen({ onSetupComplete, showToast }: Data
           <div 
             onClick={handleOpenDb}
             className="db-setup-card"
-            style={{
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              borderRadius: 'var(--radius-md)',
-              padding: '32px 24px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
           >
-            <div className="icon-wrapper" style={{
-              background: 'rgba(16, 185, 129, 0.1)',
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '16px',
-              color: '#10b981',
-              transition: 'all 0.3s ease'
-            }}>
+            <div className="icon-wrapper">
               <FolderOpen size={22} />
             </div>
-            <h3 style={{ color: '#ffffff', fontSize: '16px', fontWeight: 700, margin: '0 0 8px 0' }}>
-              Open Existing Database
-            </h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '12.5px', lineHeight: '1.5', margin: 0 }}>
+            <h3>Open Existing Database</h3>
+            <p>
               Connect to an existing database file. Perfect for restoring from backup or sharing drives.
             </p>
           </div>
         </div>
 
         {/* Security / Info Badge */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.04)',
-          borderRadius: '50px',
-          padding: '6px 16px',
-          color: 'var(--color-text-muted)',
-          fontSize: '11px'
-        }}>
-          <ShieldCheck size={14} style={{ color: '#10b981' }} />
-          <span>No internet required. Your database lives entirely offline on your system.</span>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="security-badge" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '50px',
+            padding: '8px 20px',
+            color: 'var(--color-text-muted)',
+            fontSize: '11px'
+          }}>
+            <ShieldCheck size={14} style={{ color: 'var(--color-primary)' }} />
+            <span>No internet required. Your database lives entirely offline on your system.</span>
+          </div>
         </div>
 
-        {/* Local Styles for Hover Micro-animations */}
+        {/* Local Styles for Consistency & Hover Micro-animations */}
         <style>{`
+          .db-setup-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 200px;
+          }
           .db-setup-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.15) !important;
-            background: rgba(255, 255, 255, 0.04) !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-color: var(--color-primary);
+            background-color: var(--bg-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+          }
+          .db-setup-card .icon-wrapper {
+            background-color: var(--color-primary-light);
+            color: var(--color-primary);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            transition: transform var(--transition-normal);
           }
           .db-setup-card:hover .icon-wrapper {
             transform: scale(1.1);
+          }
+          .db-setup-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 8px 0;
+          }
+          .db-setup-card p {
+            font-size: 11.5px;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin: 0;
           }
         `}</style>
       </div>
