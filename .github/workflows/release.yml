@@ -26,11 +26,12 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      - name: Add MSVC Developer Command Prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install Dependencies
-        run: |
-          npm config set msvs_version 2022
-          npm ci --msvs_version=2022
-        shell: bash
+        run: npm ci
 
       - name: Build Frontend Web Assets
         run: npm run build
