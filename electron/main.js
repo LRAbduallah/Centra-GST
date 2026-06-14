@@ -43,7 +43,7 @@ function createWindow() {
     y: state.y,
     minWidth: 1024,
     minHeight: 700,
-    title: 'InvoiceForge',
+    title: 'CentraGST Suite',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -174,7 +174,7 @@ ipcMain.handle('db-select-create', async () => {
   try {
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Create New Database File',
-      defaultPath: path.join(app.getPath('documents'), 'invoiceforge.db'),
+      defaultPath: path.join(app.getPath('documents'), 'centragst.db'),
       buttonLabel: 'Create Database',
       filters: [
         { name: 'SQLite Database (*.db)', extensions: ['db'] },
@@ -252,7 +252,7 @@ ipcMain.handle('print-pdf', async (event) => {
 
 app.whenReady().then(() => {
   if (isTest) {
-    const DB_PATH = path.join(app.getPath('userData'), 'invoiceforge.db');
+    const DB_PATH = path.join(app.getPath('userData'), 'centragst.db');
     db.initDatabase(DB_PATH);
     dbInitialized = true;
   } else {

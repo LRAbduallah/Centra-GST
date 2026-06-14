@@ -1,6 +1,7 @@
 import React from 'react';
 import { Profile } from '../types';
 import { PlusCircle, History, Settings, FileText, Menu, Sun, Moon } from 'lucide-react';
+import logoImg from '../assets/logo.svg';
 
 interface SidebarProps {
   profiles: Profile[];
@@ -49,21 +50,33 @@ export default function Sidebar({
     <div className={`sidebar-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar">
         {/* Sidebar Logo Header */}
-        <div className="sidebar-logo">
+        <div className="sidebar-logo" style={{ padding: isCollapsed ? '16px 0' : '20px' }}>
           <div className="sidebar-logo-header">
-            <div className="sidebar-text" style={{ display: 'flex', flexDirection: 'column' }}>
-              <h1 style={{ margin: 0 }}>InvoiceForge</h1>
-              <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                GST Invoice Generator
-              </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
+              <img
+                src={logoImg}
+                style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0 }}
+                onClick={onToggleCollapse}
+                alt="CentraGST Suite Logo"
+                title={isCollapsed ? 'Expand Sidebar' : 'CentraGST Suite'}
+              />
+              <div className="sidebar-text" style={{ display: 'flex', flexDirection: 'column' }}>
+                <h1 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>CentraGST Suite</h1>
+                <p style={{ margin: '2px 0 0', fontSize: '10px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                  Enterprise Billing System
+                </p>
+              </div>
             </div>
-            <button
-              className="collapse-toggle-btn"
-              onClick={onToggleCollapse}
-              title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-            >
-              <Menu size={18} />
-            </button>
+            {!isCollapsed && (
+              <button
+                className="collapse-toggle-btn"
+                onClick={onToggleCollapse}
+                title="Collapse Sidebar"
+                style={{ marginLeft: '10px', flexShrink: 0 }}
+              >
+                <Menu size={18} />
+              </button>
+            )}
           </div>
         </div>
 

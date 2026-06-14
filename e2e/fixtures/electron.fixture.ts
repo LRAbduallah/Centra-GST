@@ -19,7 +19,7 @@ export type ElectronFixture = {
 
 export const test = base.extend<ElectronFixture>({
   app: async ({}, use) => {
-    const tmpUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'invoiceforge-e2e-'));
+    const tmpUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'centragst-e2e-'));
 
     const electronApp = await electron.launch({
       args: [path.join(__dirname, '../../electron/main.js')],

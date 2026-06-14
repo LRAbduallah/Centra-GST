@@ -7,7 +7,7 @@ import { test, expect, fillProfileWizard } from './fixtures/electron.fixture';
 test.describe('Onboarding Flow', () => {
   test('E1: Fresh launch shows startup / welcome screen', async ({ page }) => {
     // With empty userData, no profiles exist → welcome screen shown
-    await expect(page.locator('text=Welcome to InvoiceForge')).toBeVisible();
+    await expect(page.locator('text=Welcome to CentraGST Suite')).toBeVisible();
   });
 
   test('E2: Clicking "Set Up My Business" opens the profile modal', async ({ page }) => {

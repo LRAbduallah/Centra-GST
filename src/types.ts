@@ -80,3 +80,4 @@ declare global {
     electronAPI?: ElectronAPI;
   }
 }
+

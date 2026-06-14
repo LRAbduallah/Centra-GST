@@ -13,7 +13,7 @@ import os from 'os';
 // so we can close and reopen the app in the same test
 const test = base.extend<{ persistentUserData: string }>({
   persistentUserData: async ({}, use) => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'invoiceforge-persist-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'centragst-persist-'));
     await use(dir);
     fs.rmSync(dir, { recursive: true, force: true });
   },

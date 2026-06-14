@@ -1,6 +1,7 @@
 import React from 'react';
 import { Profile } from '../types';
 import { Plus, Briefcase } from 'lucide-react';
+import logoImg from '../assets/logo.svg';
 
 interface StartupScreenProps {
   profiles: Profile[];
@@ -15,8 +16,21 @@ export default function StartupScreen({ profiles, onSelect, onAdd }: StartupScre
     <div className="startup-container">
       {hasProfiles ? (
         <div className="startup-card" style={{ maxWidth: '640px' }}>
-          <h2>InvoiceForge</h2>
-          <p className="subtitle">Select a business profile to start billing</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+            <img
+              src={logoImg}
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '16px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+              }}
+              alt="CentraGST Suite Logo"
+            />
+            <h2>CentraGST Suite</h2>
+            <p className="subtitle">Select a business profile to start billing</p>
+          </div>
 
           <div className="startup-grid">
             {profiles.map((p) => (
@@ -43,7 +57,18 @@ export default function StartupScreen({ profiles, onSelect, onAdd }: StartupScre
         </div>
       ) : (
         <div className="startup-card">
-          <h2>Welcome to InvoiceForge</h2>
+          <img
+            src={logoImg}
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+            }}
+            alt="CentraGST Suite Logo"
+          />
+          <h2>Welcome to CentraGST Suite</h2>
           <p className="subtitle">
             Create your first business profile to generate GST-compliant tax bills.
           </p>

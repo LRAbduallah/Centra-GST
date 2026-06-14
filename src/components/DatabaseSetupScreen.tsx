@@ -1,5 +1,6 @@
 import React from 'react';
 import { Database, FolderOpen, FilePlus, ShieldCheck } from 'lucide-react';
+import logoImg from '../assets/logo.svg';
 
 interface DatabaseSetupScreenProps {
   onSetupComplete: () => void;
@@ -52,21 +53,19 @@ export default function DatabaseSetupScreen({ onSetupComplete, showToast }: Data
       <div className="startup-card" style={{ maxWidth: '640px', padding: '40px' }}>
         {/* Animated Brand Header */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div className="db-logo-icon" style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, hsl(354, 70%, 35%) 100%)',
-            width: '56px',
-            height: '56px',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '20px',
-            boxShadow: '0 8px 24px hsla(354, 70%, 45%, 0.25)'
-          }}>
-            <Database size={28} color="#fff" />
-          </div>
+          <img
+            src={logoImg}
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '20px',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
+            }}
+            alt="CentraGST Suite Logo"
+          />
 
-          <h2>Welcome to InvoiceForge</h2>
+          <h2>Welcome to CentraGST Suite</h2>
           <p className="subtitle" style={{ maxWidth: '480px', margin: '8px auto 32px auto', lineHeight: '1.6' }}>
             Select where you would like to store your local database. All your business profiles, settings, and invoices will be stored securely at this location.
           </p>

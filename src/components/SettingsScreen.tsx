@@ -164,7 +164,7 @@ export default function SettingsScreen({
       const link = document.createElement('a');
       link.setAttribute('href', url);
       const today = new Date().toISOString().split('T')[0];
-      link.setAttribute('download', `InvoiceForge_Backup_${today}.json`);
+      link.setAttribute('download', `CentraGST_Backup_${today}.json`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -476,8 +476,8 @@ export default function SettingsScreen({
                   <div>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>Local Backup Security</h4>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '4px', lineHeight: '1.6' }}>
-                      InvoiceForge lives entirely inside your local browser storage (`localStorage`). To prevent data loss
-                      due to browser cleanups, cache clearings, or computer changes, we recommend exporting standard 
+                      CentraGST Suite lives entirely inside a secure offline local SQLite3 database. To prevent data loss
+                      due to hardware failures or to sync your configuration to another computer, we recommend exporting standard 
                       database backups periodically.
                     </p>
                   </div>

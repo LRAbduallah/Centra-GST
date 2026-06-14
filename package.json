@@ -43,8 +43,8 @@
     "vitest": "^4.1.8"
   },
   "build": {
-    "appId": "com.invoiceforge.app",
-    "productName": "InvoiceForge",
+    "appId": "com.centragst.app",
+    "productName": "CentraGST Suite",
     "directories": {
       "output": "dist-desktop"
     },

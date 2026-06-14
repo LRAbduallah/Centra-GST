@@ -29,7 +29,7 @@ export const db: DatabaseAPI = hasElectronDB
   : {
       getProfiles: async () => {
         try {
-          const val = localStorage.getItem('invoiceforge:profiles');
+          const val = localStorage.getItem('centragst:profiles');
           return val ? JSON.parse(val) : [];
         } catch {
           return [];
@@ -38,7 +38,7 @@ export const db: DatabaseAPI = hasElectronDB
 
       upsertProfile: async (id: string, data: Profile) => {
         try {
-          const val = localStorage.getItem('invoiceforge:profiles');
+          const val = localStorage.getItem('centragst:profiles');
           const list: Profile[] = val ? JSON.parse(val) : [];
           const idx = list.findIndex(p => p.id === id);
           if (idx !== -1) {
@@ -46,7 +46,7 @@ export const db: DatabaseAPI = hasElectronDB
           } else {
             list.push(data);
           }
-          localStorage.setItem('invoiceforge:profiles', JSON.stringify(list));
+          localStorage.setItem('centragst:profiles', JSON.stringify(list));
         } catch (e) {
           console.error('shim: upsertProfile failed', e);
         }
@@ -54,15 +54,15 @@ export const db: DatabaseAPI = hasElectronDB
 
       deleteProfile: async (id: string) => {
         try {
-          const val = localStorage.getItem('invoiceforge:profiles');
+          const val = localStorage.getItem('centragst:profiles');
           if (val) {
             const list: Profile[] = JSON.parse(val);
             const updated = list.filter(p => p.id !== id);
-            localStorage.setItem('invoiceforge:profiles', JSON.stringify(updated));
+            localStorage.setItem('centragst:profiles', JSON.stringify(updated));
           }
           // Clean up catalog and invoices for this profile
-          localStorage.removeItem(`invoiceforge:catalog:${id}`);
-          localStorage.removeItem(`invoiceforge:invoices:${id}`);
+          localStorage.removeItem(`centragst:catalog:${id}`);
+          localStorage.removeItem(`centragst:invoices:${id}`);
         } catch (e) {
           console.error('shim: deleteProfile failed', e);
         }
@@ -70,7 +70,7 @@ export const db: DatabaseAPI = hasElectronDB
 
       getCatalog: async (profileId: string) => {
         try {
-          const val = localStorage.getItem(`invoiceforge:catalog:${profileId}`);
+          const val = localStorage.getItem(`centragst:catalog:${profileId}`);
           return val ? JSON.parse(val) : [];
         } catch {
           return [];
@@ -79,7 +79,7 @@ export const db: DatabaseAPI = hasElectronDB
 
       upsertCatalogItem: async (id: string, profileId: string, data: Product) => {
         try {
-          const val = localStorage.getItem(`invoiceforge:catalog:${profileId}`);
+          const val = localStorage.getItem(`centragst:catalog:${profileId}`);
           const list: Product[] = val ? JSON.parse(val) : [];
           const idx = list.findIndex(item => item.id === id);
           if (idx !== -1) {
@@ -87,7 +87,7 @@ export const db: DatabaseAPI = hasElectronDB
           } else {
             list.push({ ...data, id });
           }
-          localStorage.setItem(`invoiceforge:catalog:${profileId}`, JSON.stringify(list));
+          localStorage.setItem(`centragst:catalog:${profileId}`, JSON.stringify(list));
         } catch (e) {
           console.error('shim: upsertCatalogItem failed', e);
         }
@@ -97,7 +97,7 @@ export const db: DatabaseAPI = hasElectronDB
         try {
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('invoiceforge:catalog:')) {
+            if (key && key.startsWith('centragst:catalog:')) {
               const val = localStorage.getItem(key);
               if (val) {
                 const list: Product[] = JSON.parse(val);
@@ -117,14 +117,14 @@ export const db: DatabaseAPI = hasElectronDB
       getInvoices: async (profileId?: string) => {
         try {
           if (profileId && profileId !== 'all') {
-            const val = localStorage.getItem(`invoiceforge:invoices:${profileId}`);
+            const val = localStorage.getItem(`centragst:invoices:${profileId}`);
             return val ? JSON.parse(val) : [];
           } else {
             // Aggregate all invoices
             const allInvoices: Invoice[] = [];
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
-              if (key && key.startsWith('invoiceforge:invoices:')) {
+              if (key && key.startsWith('centragst:invoices:')) {
                 const val = localStorage.getItem(key);
                 if (val) {
                   const list: Invoice[] = JSON.parse(val);
@@ -141,7 +141,7 @@ export const db: DatabaseAPI = hasElectronDB
 
       upsertInvoice: async (id: string, profileId: string, data: Invoice) => {
         try {
-          const val = localStorage.getItem(`invoiceforge:invoices:${profileId}`);
+          const val = localStorage.getItem(`centragst:invoices:${profileId}`);
           const list: Invoice[] = val ? JSON.parse(val) : [];
           const idx = list.findIndex(inv => inv.id === id);
           if (idx !== -1) {
@@ -149,7 +149,7 @@ export const db: DatabaseAPI = hasElectronDB
           } else {
             list.push(data);
           }
-          localStorage.setItem(`invoiceforge:invoices:${profileId}`, JSON.stringify(list));
+          localStorage.setItem(`centragst:invoices:${profileId}`, JSON.stringify(list));
         } catch (e) {
           console.error('shim: upsertInvoice failed', e);
         }
@@ -159,7 +159,7 @@ export const db: DatabaseAPI = hasElectronDB
         try {
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('invoiceforge:invoices:')) {
+            if (key && key.startsWith('centragst:invoices:')) {
               const val = localStorage.getItem(key);
               if (val) {
                 const list: Invoice[] = JSON.parse(val);
@@ -178,7 +178,7 @@ export const db: DatabaseAPI = hasElectronDB
 
       getSetting: async (key: string) => {
         try {
-          const val = localStorage.getItem(`invoiceforge:${key}`);
+          const val = localStorage.getItem(`centragst:${key}`);
           return val ? JSON.parse(val) : null;
         } catch {
           return null;
@@ -187,7 +187,7 @@ export const db: DatabaseAPI = hasElectronDB
 
       setSetting: async (key: string, value: any) => {
         try {
-          localStorage.setItem(`invoiceforge:${key}`, JSON.stringify(value));
+          localStorage.setItem(`centragst:${key}`, JSON.stringify(value));
         } catch (e) {
           console.error('shim: setSetting failed', e);
         }
