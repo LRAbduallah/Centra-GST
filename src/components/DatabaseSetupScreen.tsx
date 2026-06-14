@@ -68,7 +68,7 @@ export default function DatabaseSetupScreen({ onSetupComplete, showToast }: Data
 
           <h2>Welcome to InvoiceForge</h2>
           <p className="subtitle" style={{ maxWidth: '480px', margin: '8px auto 32px auto', lineHeight: '1.6' }}>
-            Select where you would like to store your local SQLite3 database. All your business profiles, settings, and invoices will be stored securely at this location.
+            Select where you would like to store your local database. All your business profiles, settings, and invoices will be stored securely at this location.
           </p>
         </div>
 
