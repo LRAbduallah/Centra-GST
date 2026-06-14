@@ -29,6 +29,23 @@
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme="light"] {
+  --bg-app: hsl(240, 10%, 94%);
+  --bg-panel: hsl(240, 10%, 97%);
+  --bg-card: hsl(0, 0%, 100%);
+  --bg-input: hsl(240, 10%, 90%);
+  --bg-hover: hsl(240, 10%, 86%);
+  --bg-active: hsl(240, 10%, 82%);
+  
+  --color-text: hsl(240, 10%, 12%);
+  --color-text-muted: hsl(240, 6%, 40%);
+  --color-text-darker: hsl(240, 5%, 55%);
+  
+  --border-color: hsl(240, 10%, 84%);
+  --border-color-focus: hsl(354, 70%, 45%);
+  --color-primary-light: hsla(354, 70%, 45%, 0.1);
+}
+
 /* Base resets */
 * {
   box-sizing: border-box;
@@ -55,27 +72,89 @@ body {
   background-color: var(--bg-app);
 }
 
-/* Sidebar Styling (Glassmorphism) */
-.sidebar {
+/* Sidebar Wrapper Container */
+.sidebar-wrapper {
   width: 240px;
   min-width: 240px;
-  background: linear-gradient(180deg, hsl(240, 10%, 7%) 0%, hsl(240, 10%, 5%) 100%);
+  height: 100%;
+  flex-shrink: 0;
+  transition: width var(--transition-normal), min-width var(--transition-normal);
+  position: relative;
+  z-index: 50;
+}
+
+.sidebar-wrapper.collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+/* Sidebar Styling (Adaptive Theme & Hover Expansion) */
+.sidebar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-app) 100%);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  overflow: hidden;
+  transition: width var(--transition-normal), box-shadow var(--transition-normal);
 }
 
-.sidebar-logo {
-  padding: 24px 20px 18px;
+/* Visibility rules when collapsed */
+.sidebar-wrapper.collapsed .sidebar-text {
+  display: none !important;
+}
+
+/* Centering components when collapsed */
+.sidebar-wrapper.collapsed .sidebar-logo {
+  padding: 16px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-bottom: 1px solid var(--border-color);
 }
 
+.sidebar-wrapper.collapsed .profile-switcher {
+  display: none !important;
+}
+
+.sidebar-wrapper.collapsed .nav-item {
+  padding: 14px 0;
+  justify-content: center;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-wrapper.collapsed .nav-item.active {
+  border-left-color: var(--color-primary);
+}
+
+.sidebar-wrapper.collapsed .sidebar-footer {
+  display: none !important;
+}
+
+.sidebar-logo {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-logo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sidebar-wrapper.collapsed .sidebar-logo-header {
+  justify-content: center;
+}
+
 .sidebar-logo h1 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: #ffffff;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -144,12 +223,12 @@ body {
 }
 
 .nav-item:hover {
-  color: #ffffff;
+  color: var(--color-text);
   background-color: var(--bg-hover);
 }
 
 .nav-item.active {
-  color: #ffffff;
+  color: var(--color-text);
   background-color: var(--bg-active);
   border-left-color: var(--color-primary);
 }
@@ -158,6 +237,7 @@ body {
   width: 16px;
   height: 16px;
   opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .nav-item.active svg {
@@ -165,11 +245,48 @@ body {
   color: var(--color-primary);
 }
 
+/* Collapse toggle button and Theme button styles */
+.collapse-toggle-btn, .theme-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.collapse-toggle-btn:hover, .theme-toggle-btn:hover {
+  color: var(--color-text);
+  background-color: var(--bg-hover);
+}
+
+/* Theme toggle row */
+.theme-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.sidebar-wrapper.collapsed .theme-toggle-row {
+  justify-content: center;
+  padding: 12px 0;
+}
+
 .sidebar-footer {
   margin-top: auto;
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
-  background-color: hsla(240, 10%, 5%, 0.5);
+  background-color: var(--bg-panel);
 }
 
 .sidebar-footer .label {
@@ -212,7 +329,7 @@ body {
 .topbar h2 {
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .topbar-info {
@@ -265,7 +382,7 @@ body {
 }
 
 .btn-ghost:hover {
-  color: #ffffff;
+  color: var(--color-text);
   border-color: var(--color-text-muted);
   background-color: var(--bg-hover);
 }
@@ -302,7 +419,7 @@ body {
 }
 
 .btn-icon:hover {
-  color: #ffffff;
+  color: var(--color-text);
   border-color: var(--color-text-muted);
   background-color: var(--bg-hover);
 }
@@ -468,7 +585,7 @@ body {
 
 .autocomplete-item:hover {
   background-color: var(--bg-hover);
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .autocomplete-item span.rate {
@@ -659,7 +776,7 @@ body {
   padding-top: 10px;
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .totals-row.grand span.val {
@@ -780,11 +897,11 @@ body {
 }
 
 .settings-tab:hover {
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .settings-tab.active {
-  color: #ffffff;
+  color: var(--color-text);
   border-bottom-color: var(--color-primary);
 }
 
@@ -808,7 +925,7 @@ body {
 .settings-card-header h3 {
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 /* Business Profile Items */
@@ -831,7 +948,7 @@ body {
 .profile-row-item .info h4 {
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .profile-row-item .info p {
@@ -865,7 +982,7 @@ body {
 .catalog-row-item .details h4 {
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .catalog-row-item .details p {
@@ -946,7 +1063,7 @@ body {
 .modal-header h3 {
   font-size: 15px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .modal-body {
@@ -1010,7 +1127,7 @@ body {
 .startup-card h2 {
   font-size: 24px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--color-text);
   letter-spacing: -0.5px;
   margin-bottom: 8px;
 }
@@ -1057,7 +1174,7 @@ body {
 .startup-biz-card h3 {
   font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-text);
   margin-top: auto;
 }
 

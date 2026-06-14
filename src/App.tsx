@@ -25,6 +25,43 @@ export default function App() {
   const [pendingCatalogAdd, setPendingCatalogAdd] = useState<Product | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    async function initTheme() {
+      try {
+        const ready = await db.isReady();
+        if (ready) {
+          const t = await db.getSetting('theme');
+          if (t === 'light' || t === 'dark') {
+            setTheme(t);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    initTheme();
+  }, [isLoaded]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = async () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    try {
+      const ready = await db.isReady();
+      if (ready) {
+        await db.setSetting('theme', nextTheme);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Load initial data and check database status on startup
   useEffect(() => {
     async function initApp() {
@@ -295,7 +332,6 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Sidebar Navigation */}
       <Sidebar
         profiles={profiles}
         activeProfileId={activeProfileId}
@@ -303,6 +339,10 @@ export default function App() {
         currentScreen={screen}
         onScreenChange={setScreen}
         activeProfile={activeProfile}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
 
       {/* Main Panel Content */}
