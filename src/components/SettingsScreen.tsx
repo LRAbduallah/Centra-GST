@@ -42,7 +42,10 @@ export default function SettingsScreen({
       updatedCatalog[catEditingIndex] = { ...catForm };
       showToast('Product updated!', 'success');
     } else {
-      updatedCatalog.push({ ...catForm });
+      updatedCatalog.push({
+        id: Math.random().toString(36).substring(2, 9),
+        ...catForm
+      });
       showToast('Product added!', 'success');
     }
 

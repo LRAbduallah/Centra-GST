@@ -9,6 +9,7 @@ interface InvoiceEditorProps {
   profile: Profile;
   catalog: Product[];
   onSaveProfile: (updated: Profile) => void;
+  onUpdateCatalog: (newCatalog: Product[]) => void;
   showToast: (msg: string, type?: 'success' | 'error') => void;
 }
 
@@ -21,6 +22,7 @@ export default function InvoiceEditor({
   profile,
   catalog,
   onSaveProfile,
+  onUpdateCatalog,
   showToast,
 }: InvoiceEditorProps) {
   // Generate invoice number format
@@ -127,12 +129,15 @@ export default function InvoiceEditor({
 
   // Autocomplete selections
   const filteredCatalog = useMemo(() => {
-    if (!catalogSearch || catalogSearch.length < 2) return [];
+    const query = catalogSearch.trim().toLowerCase();
+    if (!query) {
+      return catalog.slice(0, 15); // Return first 15 catalog items to pick directly when focused/empty!
+    }
     return catalog.filter(
       (c) =>
-        c.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
-        c.hsn.includes(catalogSearch)
-    );
+        c.name.toLowerCase().includes(query) ||
+        c.hsn.includes(query)
+    ).slice(0, 15);
   }, [catalogSearch, catalog]);
 
   const selectCatalogItem = (rowIdx: number, prod: Product) => {
@@ -170,6 +175,33 @@ export default function InvoiceEditor({
       generatedAt: Date.now(),
       status: 'generated',
     };
+
+    // Check and efficiently auto-add new items to profile catalog (time O(N) complexity)
+    const currentCatalog = [...catalog];
+    let catalogUpdated = false;
+    const catalogNameMap = new Map(currentCatalog.map(p => [p.name.toLowerCase(), p]));
+
+    inv.items.forEach((item) => {
+      const cleanName = item.description.trim();
+      if (!cleanName) return;
+
+      if (!catalogNameMap.has(cleanName.toLowerCase())) {
+        const newProduct: Product = {
+          id: Math.random().toString(36).substring(2, 9),
+          name: cleanName,
+          hsn: item.hsn || '',
+          rate: String(item.netRate || '0'),
+          category: 'Auto-Added',
+        };
+        currentCatalog.push(newProduct);
+        catalogNameMap.set(cleanName.toLowerCase(), newProduct);
+        catalogUpdated = true;
+      }
+    });
+
+    if (catalogUpdated) {
+      onUpdateCatalog(currentCatalog);
+    }
 
     // Save to history
     const existing = STORAGE.get(`invoices:${profile.id}`) || [];
@@ -400,6 +432,10 @@ export default function InvoiceEditor({
                           onChange={(e) => {
                             updateItemField(idx, 'description', e.target.value);
                             setCatalogSearch(e.target.value);
+                            setActiveCatalogRow(idx);
+                          }}
+                          onFocus={() => {
+                            setCatalogSearch(item.description || '');
                             setActiveCatalogRow(idx);
                           }}
                           onBlur={() => {

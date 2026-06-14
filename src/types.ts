@@ -20,6 +20,7 @@ export interface Profile {
 }
 
 export interface Product {
+  id?: string;
   name: string;
   hsn: string;
   rate: string; // net rate pre-tax

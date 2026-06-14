@@ -45,16 +45,20 @@ export default function App() {
   }, [profiles, activeProfileId]);
 
   // Load Profile catalog
-  const catalog = useMemo<Product[]>(() => {
-    if (!activeProfile) return [];
-    return STORAGE.get(`catalog:${activeProfile.id}`) || [];
-  }, [activeProfile]);
+  const [catalog, setCatalog] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (activeProfile) {
+      setCatalog(STORAGE.get(`catalog:${activeProfile.id}`) || []);
+    } else {
+      setCatalog([]);
+    }
+  }, [activeProfileId, activeProfile]);
 
   const updateCatalog = (newCatalog: Product[]) => {
     if (!activeProfile) return;
     STORAGE.set(`catalog:${activeProfile.id}`, newCatalog);
-    // Trigger reactivity by force-updating profile state or just standard reload
-    setProfiles([...profiles]); // trigger memo re-evaluation
+    setCatalog(newCatalog);
   };
 
   // Switcher check on startup
@@ -192,6 +196,7 @@ export default function App() {
               profile={activeProfile}
               catalog={catalog}
               onSaveProfile={updateProfile}
+              onUpdateCatalog={updateCatalog}
               showToast={showToast}
             />
           )}
