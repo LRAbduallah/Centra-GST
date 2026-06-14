@@ -37,6 +37,13 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
+  const [pendingCatalogAdd, setPendingCatalogAdd] = useState<Product | null>(null);
+
+  const handleAddProductToInvoice = (prod: Product) => {
+    setPendingCatalogAdd(prod);
+    setScreen('new-invoice');
+    showToast(`Added ${prod.name} to invoice!`, 'success');
+  };
 
   // Active Profile
   const activeProfile = useMemo(() => {
@@ -198,6 +205,8 @@ export default function App() {
               onSaveProfile={updateProfile}
               onUpdateCatalog={updateCatalog}
               showToast={showToast}
+              pendingCatalogAdd={pendingCatalogAdd}
+              clearPendingCatalogAdd={() => setPendingCatalogAdd(null)}
             />
           )}
 
@@ -213,6 +222,7 @@ export default function App() {
               onDeleteProfile={deleteProfile}
               catalog={catalog}
               onUpdateCatalog={updateCatalog}
+              onAddToInvoice={handleAddProductToInvoice}
               showToast={showToast}
             />
           )}

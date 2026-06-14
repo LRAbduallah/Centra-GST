@@ -3,7 +3,7 @@ import { Profile, Product, LineItem, Invoice } from '../types';
 import InvoicePreview from './InvoicePreview';
 import { STORAGE } from '../App';
 import { calcTotals } from '../utils/calculations';
-import { Plus, Printer, Download, FileText, Image as ImageIcon, RotateCcw, Save } from 'lucide-react';
+import { Plus, Printer, Download, FileText, Image as ImageIcon, RotateCcw, Save, X, Search, AlertTriangle } from 'lucide-react';
 
 interface InvoiceEditorProps {
   profile: Profile;
@@ -11,6 +11,8 @@ interface InvoiceEditorProps {
   onSaveProfile: (updated: Profile) => void;
   onUpdateCatalog: (newCatalog: Product[]) => void;
   showToast: (msg: string, type?: 'success' | 'error') => void;
+  pendingCatalogAdd: Product | null;
+  clearPendingCatalogAdd: () => void;
 }
 
 function todayDate() {
@@ -24,6 +26,8 @@ export default function InvoiceEditor({
   onSaveProfile,
   onUpdateCatalog,
   showToast,
+  pendingCatalogAdd,
+  clearPendingCatalogAdd,
 }: InvoiceEditorProps) {
   // Generate invoice number format
   const makeInvoiceNo = (prof: Profile) => {
@@ -58,11 +62,114 @@ export default function InvoiceEditor({
   const [catalogSearch, setCatalogSearch] = useState('');
   const [isGenerated, setIsGenerated] = useState(false);
 
+  // Catalog Browser Modal States
+  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
+  const [modalSearch, setModalSearch] = useState('');
+  const [selectedModalProducts, setSelectedModalProducts] = useState<Product[]>([]);
+
+  const filteredModalCatalog = useMemo(() => {
+    const query = modalSearch.trim().toLowerCase();
+    if (!query) return catalog;
+    return catalog.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.hsn.includes(query) ||
+        (c.category && c.category.toLowerCase().includes(query))
+    );
+  }, [modalSearch, catalog]);
+
+  const toggleModalProductSelection = (prod: Product) => {
+    setSelectedModalProducts((prev) => {
+      const alreadySelected = prev.some((p) => p.name === prod.name);
+      if (alreadySelected) {
+        return prev.filter((p) => p.name !== prod.name);
+      } else {
+        return [...prev, prod];
+      }
+    });
+  };
+
+  const handleAddSelectedFromModal = () => {
+    if (selectedModalProducts.length === 0) return;
+
+    setInv((prev) => {
+      let updatedItems = [...prev.items];
+
+      const firstItem = prev.items[0];
+      const isFirstBlank =
+        prev.items.length === 1 &&
+        !firstItem.description.trim() &&
+        !firstItem.hsn.trim() &&
+        !firstItem.netRate;
+
+      const newItems = selectedModalProducts.map((prod) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        hsn: prod.hsn || '',
+        description: prod.name,
+        qty: 1,
+        netRate: prod.rate || '',
+        gstPct: null,
+      }));
+
+      if (isFirstBlank) {
+        updatedItems = newItems;
+      } else {
+        updatedItems = [...updatedItems, ...newItems];
+      }
+
+      return {
+        ...prev,
+        items: updatedItems,
+      };
+    });
+
+    showToast(`Added ${selectedModalProducts.length} items to invoice!`, 'success');
+    setSelectedModalProducts([]);
+    setModalSearch('');
+    setShowCatalogBrowser(false);
+  };
+
   // Sync with profile changes
   useEffect(() => {
     setInv(createInitialState(profile));
     setIsGenerated(false);
   }, [profile]);
+
+  // Sync pending catalog add from Settings
+  useEffect(() => {
+    if (pendingCatalogAdd) {
+      setInv((prev) => {
+        const firstItem = prev.items[0];
+        const isFirstBlank =
+          prev.items.length === 1 &&
+          !firstItem.description.trim() &&
+          !firstItem.hsn.trim() &&
+          !firstItem.netRate;
+
+        const newItem = {
+          id: Math.random().toString(36).substring(2, 9),
+          hsn: pendingCatalogAdd.hsn || '',
+          description: pendingCatalogAdd.name,
+          qty: 1,
+          netRate: pendingCatalogAdd.rate || '',
+          gstPct: null,
+        };
+
+        if (isFirstBlank) {
+          return {
+            ...prev,
+            items: [newItem],
+          };
+        } else {
+          return {
+            ...prev,
+            items: [...prev.items, newItem],
+          };
+        }
+      });
+      clearPendingCatalogAdd();
+    }
+  }, [pendingCatalogAdd, clearPendingCatalogAdd]);
 
   const totals = useMemo(() => calcTotals(inv.items, profile), [inv.items, profile]);
 
@@ -502,9 +609,19 @@ export default function InvoiceEditor({
           </div>
 
           {!isGenerated && (
-            <button type="button" className="add-row-btn" onClick={addItemRow}>
-              + Add Item Row
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" className="add-row-btn" style={{ flex: 1 }} onClick={addItemRow}>
+                + Add Blank Row
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ flex: 1, borderStyle: 'dashed', borderRadius: 'var(--radius-md)', fontSize: '11px', fontWeight: 600, padding: '8px' }}
+                onClick={() => setShowCatalogBrowser(true)}
+              >
+                + Add From Catalog
+              </button>
+            </div>
           )}
         </div>
 
@@ -585,6 +702,103 @@ export default function InvoiceEditor({
 
         <InvoicePreview invoice={inv} profile={profile} />
       </div>
+
+      {/* Catalog Browser Modal (Add multiple at once) */}
+      {showCatalogBrowser && (
+        <div className="modal-overlay" onClick={() => setShowCatalogBrowser(false)}>
+          <div className="modal-box" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Browse Product Catalog ({profile.bizName})</h3>
+              <button className="btn-icon" onClick={() => setShowCatalogBrowser(false)}>
+                <X size={14} />
+              </button>
+            </div>
+            
+            <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {/* Search filter */}
+              <div className="autocomplete-wrap" style={{ marginBottom: '16px' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ width: '100%', paddingLeft: '32px' }}
+                  placeholder="Filter catalog products..."
+                  value={modalSearch}
+                  onChange={(e) => setModalSearch(e.target.value)}
+                />
+                <Search
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--color-text-darker)',
+                  }}
+                />
+              </div>
+
+              {/* Products List */}
+              {filteredModalCatalog.length === 0 ? (
+                <div className="empty-state" style={{ padding: '24px 0' }}>
+                  <AlertTriangle size={32} />
+                  <h4>No catalog items found</h4>
+                  <p>Add products in settings or search another query.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {filteredModalCatalog.map((prod) => {
+                    const isSelected = selectedModalProducts.some((p) => p.name === prod.name);
+                    return (
+                      <div
+                        key={prod.id || prod.name}
+                        className="profile-row-item"
+                        style={{
+                          margin: 0,
+                          cursor: 'pointer',
+                          borderColor: isSelected ? 'var(--color-primary)' : 'var(--border-color)',
+                          backgroundColor: isSelected ? 'var(--bg-active)' : 'var(--bg-card)',
+                        }}
+                        onClick={() => toggleModalProductSelection(prod)}
+                      >
+                        <div className="info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            style={{ cursor: 'pointer' }}
+                          />
+                          <div>
+                            <h4 style={{ margin: 0 }}>{prod.name}</h4>
+                            <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                              HSN: {prod.hsn || '—'} • Category: {prod.category || 'General'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="table-text-display" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                          ₹{Number(prod.rate || 0).toFixed(2)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setShowCatalogBrowser(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                disabled={selectedModalProducts.length === 0}
+                onClick={handleAddSelectedFromModal}
+              >
+                Add Selected ({selectedModalProducts.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

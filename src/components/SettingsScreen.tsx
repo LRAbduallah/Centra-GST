@@ -11,6 +11,7 @@ interface SettingsScreenProps {
   onDeleteProfile: (id: string) => void;
   catalog: Product[];
   onUpdateCatalog: (newCatalog: Product[]) => void;
+  onAddToInvoice: (prod: Product) => void;
   showToast: (msg: string, type?: 'success' | 'error') => void;
 }
 
@@ -21,6 +22,7 @@ export default function SettingsScreen({
   onDeleteProfile,
   catalog,
   onUpdateCatalog,
+  onAddToInvoice,
   showToast,
 }: SettingsScreenProps) {
   const [activeTab, setActiveTab] = useState<'profiles' | 'catalog' | 'backup'>('profiles');
@@ -401,6 +403,13 @@ export default function SettingsScreen({
                           </p>
                         </div>
                         <div className="history-actions">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '4px 8px', fontSize: '10px' }}
+                            onClick={() => onAddToInvoice(item)}
+                          >
+                            + Invoice
+                          </button>
                           <button className="btn btn-ghost btn-sm" onClick={() => editCatalogItem(idx)}>
                             <Edit2 size={12} />
                           </button>

@@ -22,7 +22,7 @@ export default function Sidebar({
   const navItems = [
     {
       key: 'new-invoice',
-      label: 'New Invoice',
+      label: 'Invoice',
       icon: <FileText size={16} />,
     },
     {
