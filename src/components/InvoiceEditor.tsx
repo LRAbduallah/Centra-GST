@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Profile, Product, LineItem, Invoice } from '../types';
 import InvoicePreview from './InvoicePreview';
-import { STORAGE } from '../App';
+import { db } from '../db';
 import { calcTotals } from '../utils/calculations';
 import { Plus, Printer, Download, FileText, Image as ImageIcon, RotateCcw, Save, X, Search, AlertTriangle } from 'lucide-react';
 
@@ -256,7 +256,7 @@ export default function InvoiceEditor({
   };
 
   // Save/Generate Action
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!inv.customerName.trim()) {
       showToast('Customer name is required', 'error');
       return;
@@ -310,9 +310,14 @@ export default function InvoiceEditor({
       onUpdateCatalog(currentCatalog);
     }
 
-    // Save to history
-    const existing = STORAGE.get(`invoices:${profile.id}`) || [];
-    STORAGE.set(`invoices:${profile.id}`, [...existing, savedInvoice]);
+    // Save to history using SQLite DB layer
+    try {
+      await db.upsertInvoice(savedInvoice.id, profile.id, savedInvoice);
+    } catch (err) {
+      console.error('Failed to save invoice:', err);
+      showToast('Error saving invoice to database', 'error');
+      return;
+    }
 
     // Increment profile counter
     const updatedProfile: Profile = {

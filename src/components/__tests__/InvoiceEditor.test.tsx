@@ -6,13 +6,6 @@ import InvoiceEditor from '../InvoiceEditor';
 import { testProfile, testProduct, testProduct2 } from './fixtures';
 import { Product } from '../../types';
 
-// Mock STORAGE used inside InvoiceEditor
-vi.mock('../../App', () => ({
-  STORAGE: {
-    get: vi.fn().mockReturnValue(null),
-    set: vi.fn(),
-  },
-}));
 
 // Mock html2canvas and jsPDF (not needed for these tests)
 vi.mock('html2canvas', () => ({ default: vi.fn() }));

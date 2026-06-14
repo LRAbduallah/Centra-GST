@@ -5,24 +5,9 @@ import ProfileModal from './components/ProfileModal';
 import InvoiceEditor from './components/InvoiceEditor';
 import InvoiceHistory from './components/InvoiceHistory';
 import SettingsScreen from './components/SettingsScreen';
+import DatabaseSetupScreen from './components/DatabaseSetupScreen';
 import { Profile, Product, Invoice } from './types';
-
-// Storage Helper
-export const STORAGE = {
-  get: (k: string) => {
-    try {
-      const v = localStorage.getItem('invoiceforge:' + k);
-      return v ? JSON.parse(v) : null;
-    } catch {
-      return null;
-    }
-  },
-  set: (k: string, v: any) => {
-    try {
-      localStorage.setItem('invoiceforge:' + k, JSON.stringify(v));
-    } catch {}
-  },
-};
+import { db } from './db';
 
 export interface ToastMessage {
   id: number;
@@ -31,13 +16,68 @@ export interface ToastMessage {
 }
 
 export default function App() {
-  const [profiles, setProfiles] = useState<Profile[]>(() => STORAGE.get('profiles') || []);
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(() => STORAGE.get('active_profile') || null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [screen, setScreen] = useState<string>('startup');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
   const [pendingCatalogAdd, setPendingCatalogAdd] = useState<Product | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load initial data and check database status on startup
+  useEffect(() => {
+    async function initApp() {
+      try {
+        const ready = await db.isReady();
+        if (!ready) {
+          setScreen('db-setup');
+          setIsLoaded(true);
+          return;
+        }
+
+        const dbProfiles = await db.getProfiles();
+        const activeId = await db.getSetting('active_profile');
+
+        setProfiles(dbProfiles);
+        setActiveProfileId(activeId);
+        
+        if (dbProfiles.length === 0) {
+          setScreen('startup');
+        } else {
+          setScreen('new-invoice');
+        }
+      } catch (err) {
+        console.error('App init error:', err);
+        showToast('Error initializing database', 'error');
+      } finally {
+        setIsLoaded(true);
+      }
+    }
+    initApp();
+  }, []);
+
+  const handleDbSetupComplete = async () => {
+    try {
+      setIsLoaded(false);
+      const dbProfiles = await db.getProfiles();
+      const activeId = await db.getSetting('active_profile');
+
+      setProfiles(dbProfiles);
+      setActiveProfileId(activeId);
+
+      if (dbProfiles.length === 0) {
+        setScreen('startup');
+      } else {
+        setScreen('new-invoice');
+      }
+    } catch (err) {
+      console.error('Failed to load database after setup:', err);
+      showToast('Error loading database profiles', 'error');
+    } finally {
+      setIsLoaded(true);
+    }
+  };
 
   const handleAddProductToInvoice = (prod: Product) => {
     setPendingCatalogAdd(prod);
@@ -55,34 +95,63 @@ export default function App() {
   const [catalog, setCatalog] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (activeProfile) {
-      setCatalog(STORAGE.get(`catalog:${activeProfile.id}`) || []);
-    } else {
-      setCatalog([]);
+    async function loadCatalog() {
+      if (activeProfile) {
+        const dbCatalog = await db.getCatalog(activeProfile.id);
+        setCatalog(dbCatalog);
+      } else {
+        setCatalog([]);
+      }
     }
+    loadCatalog();
   }, [activeProfileId, activeProfile]);
 
-  const updateCatalog = (newCatalog: Product[]) => {
+  const updateCatalog = async (newCatalog: Product[]) => {
     if (!activeProfile) return;
-    STORAGE.set(`catalog:${activeProfile.id}`, newCatalog);
-    setCatalog(newCatalog);
+    try {
+      const oldCatalog = await db.getCatalog(activeProfile.id);
+      const oldIds = new Set(oldCatalog.map((x) => x.id).filter(Boolean));
+      const newIds = new Set(newCatalog.map((x) => x.id).filter(Boolean));
+
+      // Delete items no longer present
+      for (const id of oldIds) {
+        if (!newIds.has(id)) {
+          await db.deleteCatalogItem(id as string);
+        }
+      }
+
+      // Upsert new/updated items
+      for (const item of newCatalog) {
+        const itemId = item.id || Math.random().toString(36).substring(2, 9);
+        await db.upsertCatalogItem(itemId, activeProfile.id, { ...item, id: itemId });
+      }
+
+      setCatalog(newCatalog);
+    } catch (err) {
+      console.error('Failed to update catalog:', err);
+      showToast('Error saving product catalog', 'error');
+    }
   };
 
   // Switcher check on startup
   useEffect(() => {
+    if (!isLoaded || screen === 'db-setup') return;
     if (profiles.length === 0) {
       setScreen('startup');
       return;
     }
-    if (!activeProfileId || !profiles.find((p) => p.id === activeProfileId)) {
-      const firstId = profiles[0].id;
-      setActiveProfileId(firstId);
-      STORAGE.set('active_profile', firstId);
+    async function ensureActiveProfile() {
+      if (!activeProfileId || !profiles.find((p) => p.id === activeProfileId)) {
+        const firstId = profiles[0].id;
+        setActiveProfileId(firstId);
+        await db.setSetting('active_profile', firstId);
+      }
+      if (screen === 'startup') {
+        setScreen('new-invoice');
+      }
     }
-    if (screen === 'startup') {
-      setScreen('new-invoice');
-    }
-  }, [profiles]);
+    ensureActiveProfile();
+  }, [profiles, isLoaded, screen]);
 
   // Toast utility
   const showToast = (msg: string, type?: 'success' | 'error') => {
@@ -95,44 +164,98 @@ export default function App() {
   };
 
   // Profile operations
-  const addProfile = (p: Profile) => {
-    const updated = [...profiles, p];
-    setProfiles(updated);
-    STORAGE.set('profiles', updated);
-    setActiveProfileId(p.id);
-    STORAGE.set('active_profile', p.id);
-    setShowProfileModal(false);
-    setScreen('new-invoice');
-    showToast('Business profile created!', 'success');
-  };
-
-  const updateProfile = (p: Profile) => {
-    const updated = profiles.map((x) => (x.id === p.id ? p : x));
-    setProfiles(updated);
-    STORAGE.set('profiles', updated);
-    showToast('Business profile updated!', 'success');
-  };
-
-  const deleteProfile = (id: string) => {
-    const updated = profiles.filter((p) => p.id !== id);
-    setProfiles(updated);
-    STORAGE.set('profiles', updated);
-    
-    // Clean up history and catalog if desired, though PRD states invoices should remain.
-    // Clean up active ID
-    if (activeProfileId === id) {
-      const nextId = updated.length > 0 ? updated[0].id : null;
-      setActiveProfileId(nextId);
-      if (nextId) STORAGE.set('active_profile', nextId);
+  const addProfile = async (p: Profile) => {
+    try {
+      const updated = [...profiles, p];
+      setProfiles(updated);
+      await db.upsertProfile(p.id, p);
+      setActiveProfileId(p.id);
+      await db.setSetting('active_profile', p.id);
+      setShowProfileModal(false);
+      setScreen('new-invoice');
+      showToast('Business profile created!', 'success');
+    } catch (err) {
+      console.error('Failed to add profile:', err);
+      showToast('Error saving profile', 'error');
     }
-    showToast('Business profile deleted.', 'success');
   };
 
-  const switchProfile = (id: string) => {
-    setActiveProfileId(id);
-    STORAGE.set('active_profile', id);
-    setScreen('new-invoice');
+  const updateProfile = async (p: Profile) => {
+    try {
+      const updated = profiles.map((x) => (x.id === p.id ? p : x));
+      setProfiles(updated);
+      await db.upsertProfile(p.id, p);
+      showToast('Business profile updated!', 'success');
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      showToast('Error saving profile changes', 'error');
+    }
   };
+
+  const deleteProfile = async (id: string) => {
+    try {
+      const updated = profiles.filter((p) => p.id !== id);
+      setProfiles(updated);
+      await db.deleteProfile(id);
+
+      // Clean up active ID
+      if (activeProfileId === id) {
+        const nextId = updated.length > 0 ? updated[0].id : null;
+        setActiveProfileId(nextId);
+        if (nextId) await db.setSetting('active_profile', nextId);
+      }
+      showToast('Business profile deleted.', 'success');
+    } catch (err) {
+      console.error('Failed to delete profile:', err);
+      showToast('Error deleting profile', 'error');
+    }
+  };
+
+  const switchProfile = async (id: string) => {
+    try {
+      setActiveProfileId(id);
+      await db.setSetting('active_profile', id);
+      setScreen('new-invoice');
+    } catch (err) {
+      console.error('Failed to switch profile:', err);
+    }
+  };
+
+  // Loading state render
+  if (!isLoaded) {
+    return (
+      <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0f0f0f', color: '#fff' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid rgba(255,255,255,0.1)',
+            borderTopColor: '#3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: 0 }}>Loading Database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Database path setup selection screen
+  if (screen === 'db-setup') {
+    return (
+      <DatabaseSetupScreen
+        onSetupComplete={handleDbSetupComplete}
+        showToast={showToast}
+      />
+    );
+  }
 
   // First setup screen
   if (screen === 'startup' && profiles.length === 0) {

@@ -5,13 +5,6 @@ import userEvent from '@testing-library/user-event';
 import SettingsScreen from '../SettingsScreen';
 import { testProfile, testProduct, testProduct2 } from './fixtures';
 
-// Mock STORAGE used by the export backup
-vi.mock('../../App', () => ({
-  STORAGE: {
-    get: vi.fn().mockReturnValue(null),
-    set: vi.fn(),
-  },
-}));
 
 // Mock URL.createObjectURL (not in jsdom)
 global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Profile, Product } from '../types';
 import ProfileModal from './ProfileModal';
-import { STORAGE } from '../App';
+import { db } from '../db';
 import { Plus, Edit2, Trash2, Download, Upload, Shield, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface SettingsScreenProps {
@@ -144,19 +144,20 @@ export default function SettingsScreen({
   };
 
   // Database Backup / Restore
-  const exportFullBackup = () => {
+  const exportFullBackup = async () => {
     try {
+      showToast('Creating backup...', 'success');
       const data: Record<string, any> = {
-        profiles,
+        profiles: [...profiles],
         invoices: {},
         catalogs: {},
       };
 
-      // Gather all local storage databases for active profiles
-      profiles.forEach((p) => {
-        data.invoices[p.id] = STORAGE.get(`invoices:${p.id}`) || [];
-        data.catalogs[p.id] = STORAGE.get(`catalog:${p.id}`) || [];
-      });
+      // Gather all data asynchronously from SQLite database
+      for (const p of profiles) {
+        data.invoices[p.id] = await db.getInvoices(p.id);
+        data.catalogs[p.id] = await db.getCatalog(p.id);
+      }
 
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -168,7 +169,8 @@ export default function SettingsScreen({
       link.click();
       document.body.removeChild(link);
       showToast('Backup export complete!', 'success');
-    } catch {
+    } catch (err) {
+      console.error('Backup failed:', err);
       showToast('Failed to create backup.', 'error');
     }
   };
@@ -182,20 +184,50 @@ export default function SettingsScreen({
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
         if (data && Array.isArray(data.profiles)) {
-          // Restore profiles list
-          STORAGE.set('profiles', data.profiles);
+          showToast('Restoring backup data...', 'success');
           
-          // Restore invoices and catalogs
-          Object.entries(data.invoices || {}).forEach(([profileId, list]) => {
-            STORAGE.set(`invoices:${profileId}`, list);
-          });
-          Object.entries(data.catalogs || {}).forEach(([profileId, cat]) => {
-            STORAGE.set(`catalog:${profileId}`, cat);
-          });
+          // 1. Get all current profiles and delete them to clean the database (cascade deletes catalog/invoices)
+          const currentProfiles = await db.getProfiles();
+          for (const p of currentProfiles) {
+            await db.deleteProfile(p.id);
+          }
+
+          // 2. Restore profiles
+          for (const p of data.profiles) {
+            await db.upsertProfile(p.id, p);
+          }
+
+          // 3. Restore catalogs
+          if (data.catalogs) {
+            for (const [profileId, items] of Object.entries(data.catalogs)) {
+              if (Array.isArray(items)) {
+                for (const item of items) {
+                  const itemId = item.id || Math.random().toString(36).substring(2, 9);
+                  await db.upsertCatalogItem(itemId, profileId, { ...item, id: itemId });
+                }
+              }
+            }
+          }
+
+          // 4. Restore invoices
+          if (data.invoices) {
+            for (const [profileId, list] of Object.entries(data.invoices)) {
+              if (Array.isArray(list)) {
+                for (const inv of list) {
+                  await db.upsertInvoice(inv.id, profileId, inv);
+                }
+              }
+            }
+          }
+
+          // 5. Select active profile setting
+          if (data.profiles.length > 0) {
+            await db.setSetting('active_profile', data.profiles[0].id);
+          }
 
           showToast('Backup restored successfully! App is reloading...', 'success');
           setTimeout(() => {
@@ -205,6 +237,7 @@ export default function SettingsScreen({
           showToast('Invalid backup file structure.', 'error');
         }
       } catch (err) {
+        console.error('Backup restore failed:', err);
         showToast('Error reading backup file. Make sure it is valid JSON.', 'error');
       }
     };

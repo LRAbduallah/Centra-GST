@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Profile, Invoice } from '../types';
 import InvoicePreview from './InvoicePreview';
-import { STORAGE } from '../App';
+import { db } from '../db';
 import { Eye, FileText, Image as ImageIcon, Trash2, Printer, Search, X } from 'lucide-react';
 
 interface InvoiceHistoryProps {
@@ -13,23 +13,30 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProfileId, setFilterProfileId] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Combine and sort invoices from all business profiles
-  const allInvoices = useMemo(() => {
-    let list: Invoice[] = [];
-    profiles.forEach((p) => {
-      const invs: Invoice[] = STORAGE.get(`invoices:${p.id}`) || [];
-      // Attach profile metadata if missing, just in case
-      invs.forEach((inv) => {
-        list.push({ ...inv, profileId: p.id });
-      });
-    });
-    return list.sort((a, b) => b.generatedAt - a.generatedAt);
-  }, [profiles]);
+  // Load invoices asynchronously from SQLite DB layer
+  useEffect(() => {
+    async function loadInvoices() {
+      setIsLoading(true);
+      try {
+        const data = await db.getInvoices();
+        setInvoices(data);
+      } catch (err) {
+        console.error('Failed to load invoices:', err);
+        showToast('Error loading invoices from database', 'error');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadInvoices();
+  }, [profiles, refreshTrigger]);
 
-  // Filter invoices
+  // Filter invoices in memory
   const filteredInvoices = useMemo(() => {
-    return allInvoices.filter((inv) => {
+    return invoices.filter((inv) => {
       const matchProfile = filterProfileId === 'all' || inv.profileId === filterProfileId;
       const matchSearch =
         !searchTerm.trim() ||
@@ -37,49 +44,21 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
         inv.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase());
       return matchProfile && matchSearch;
     });
-  }, [allInvoices, filterProfileId, searchTerm]);
+  }, [invoices, filterProfileId, searchTerm]);
 
   // Delete invoice
-  const handleDeleteInvoice = (invToDelete: Invoice) => {
+  const handleDeleteInvoice = async (invToDelete: Invoice) => {
     if (window.confirm(`Are you sure you want to delete invoice ${invToDelete.invoiceNo} for ${invToDelete.customerName}?`)) {
-      const invoicesForProfile: Invoice[] = STORAGE.get(`invoices:${invToDelete.profileId}`) || [];
-      const updated = invoicesForProfile.filter((i) => i.id !== invToDelete.id);
-      STORAGE.set(`invoices:${invToDelete.profileId}`, updated);
-      showToast('Invoice deleted from history.', 'success');
-      // Trigger update of combined list
-      // In a real application, state lift or dispatch would trigger this, here we rely on localStorage + simple state reload
-      // But since profiles prop doesn't change, we can force trigger by modifying local state if needed. But wait,
-      // since the parent App uses STORAGE helper, if we delete here, allInvoices relies on profiles array. If we trigger a page reload
-      // or force-update, it updates. Let's force update the UI by altering a dummy counter or refreshing state.
-      // Wait, we can just trigger a component refresh. Let's do a trick: we can use a dummy state.
-      setRefreshKey(k => k + 1);
+      try {
+        await db.deleteInvoice(invToDelete.id);
+        showToast('Invoice deleted from history.', 'success');
+        setRefreshTrigger((t) => t + 1);
+      } catch (err) {
+        console.error('Failed to delete invoice:', err);
+        showToast('Error deleting invoice', 'error');
+      }
     }
   };
-
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  // Re-memoize combined invoices using refresh key
-  const memoizedInvoices = useMemo(() => {
-    let list: Invoice[] = [];
-    profiles.forEach((p) => {
-      const invs: Invoice[] = STORAGE.get(`invoices:${p.id}`) || [];
-      invs.forEach((inv) => {
-        list.push({ ...inv, profileId: p.id });
-      });
-    });
-    return list.sort((a, b) => b.generatedAt - a.generatedAt);
-  }, [profiles, refreshKey]);
-
-  const memoizedFiltered = useMemo(() => {
-    return memoizedInvoices.filter((inv) => {
-      const matchProfile = filterProfileId === 'all' || inv.profileId === filterProfileId;
-      const matchSearch =
-        !searchTerm.trim() ||
-        inv.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchProfile && matchSearch;
-    });
-  }, [memoizedInvoices, filterProfileId, searchTerm]);
 
   // Document Exports
   const handleExportPDF = async (inv: Invoice) => {
@@ -173,6 +152,29 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
     }
   };
 
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', color: 'var(--color-text-muted)' }}>
+        <style>{`
+          @keyframes history-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div style={{
+          width: '24px',
+          height: '24px',
+          border: '2px solid rgba(255,255,255,0.1)',
+          borderTopColor: 'var(--color-primary)',
+          borderRadius: '50%',
+          animation: 'history-spin 1s linear infinite',
+          marginRight: '12px'
+        }} />
+        <span>Loading Invoices...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="history-layout">
       {/* Search & Filters */}
@@ -214,7 +216,7 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
       </div>
 
       {/* Invoices List Table */}
-      {memoizedFiltered.length === 0 ? (
+      {filteredInvoices.length === 0 ? (
         <div className="empty-state">
           <FileText size={48} />
           <h4>No invoices found</h4>
@@ -237,7 +239,7 @@ export default function InvoiceHistory({ profiles, showToast }: InvoiceHistoryPr
               </tr>
             </thead>
             <tbody>
-              {memoizedFiltered.map((inv) => {
+              {filteredInvoices.map((inv) => {
                 const business = profiles.find((p) => p.id === inv.profileId);
                 return (
                   <tr key={inv.id}>

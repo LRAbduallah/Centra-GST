@@ -57,6 +57,22 @@ export interface ElectronAPI {
     contentBase64: string
   ) => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>;
   printApp: () => Promise<{ success: boolean; error?: string }>;
+  db: {
+    getProfiles: () => Promise<any[]>;
+    upsertProfile: (id: string, data: any) => Promise<void>;
+    deleteProfile: (id: string) => Promise<void>;
+    getCatalog: (profileId: string) => Promise<any[]>;
+    upsertCatalogItem: (id: string, profileId: string, data: any) => Promise<void>;
+    deleteCatalogItem: (id: string) => Promise<void>;
+    getInvoices: (profileId?: string) => Promise<any[]>;
+    upsertInvoice: (id: string, profileId: string, data: any) => Promise<void>;
+    deleteInvoice: (id: string) => Promise<void>;
+    getSetting: (key: string) => Promise<any>;
+    setSetting: (key: string, value: any) => Promise<void>;
+    isReady: () => Promise<boolean>;
+    selectCreate: () => Promise<{ success: boolean; filePath?: string; error?: string; canceled?: boolean }>;
+    selectOpen: () => Promise<{ success: boolean; filePath?: string; error?: string; canceled?: boolean }>;
+  };
 }
 
 declare global {
