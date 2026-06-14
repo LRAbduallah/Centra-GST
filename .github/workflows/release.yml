@@ -9,7 +9,10 @@ jobs:
   release:
     name: Build & Release (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    env:
+      GYP_MSVS_VERSION: 2022
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
 
