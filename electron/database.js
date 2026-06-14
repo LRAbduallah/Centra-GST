@@ -110,8 +110,21 @@ function setSetting(key, value) {
     .run(key, JSON.stringify(value));
 }
 
+function closeDatabase() {
+  if (db) {
+    try {
+      db.close();
+      console.log('SQLite database closed successfully.');
+    } catch (err) {
+      console.error('Error closing SQLite database:', err);
+    }
+    db = null;
+  }
+}
+
 module.exports = {
   initDatabase,
+  closeDatabase,
   getProfiles,
   upsertProfile,
   deleteProfile,

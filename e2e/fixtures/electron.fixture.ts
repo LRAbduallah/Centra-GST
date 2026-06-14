@@ -41,7 +41,39 @@ export const test = base.extend<ElectronFixture>({
     window.on('console', msg => console.log('PAGE LOG:', msg.text()));
     window.on('pageerror', err => console.error('PAGE ERROR:', err.message));
     await window.waitForLoadState('domcontentloaded');
-    await window.waitForSelector('.app-shell', { timeout: 15_000 });
+    
+    // Wait for database loading screen to disappear
+    await window.waitForSelector('text=Loading Database...', { state: 'hidden', timeout: 15_000 });
+
+    try {
+      // Wait up to 3 seconds for either disclaimer, welcome setup button, or dashboard sidebar to be visible
+      await Promise.any([
+        window.waitForSelector('.disclaimer-scroll-box', { state: 'visible', timeout: 3000 }),
+        window.waitForSelector('text=Set Up My Business', { state: 'visible', timeout: 3000 }),
+        window.waitForSelector('.sidebar-footer', { state: 'visible', timeout: 3000 })
+      ]);
+    } catch (e) {
+      // Ignore
+    }
+
+    // Automatically accept the developer disclaimer / terms of service if displayed
+    const disclaimer = window.locator('.disclaimer-scroll-box');
+    try {
+      if (await disclaimer.isVisible()) {
+        await disclaimer.evaluate(el => {
+          el.scrollTop = el.scrollHeight;
+          el.dispatchEvent(new Event('scroll'));
+        });
+        // Wait briefly for scroll trigger state to bind
+        await window.waitForTimeout(200);
+        await window.check('#accept-terms-checkbox');
+        await window.click('button:has-text("Accept & Continue")');
+        await window.waitForSelector('.disclaimer-scroll-box', { state: 'hidden', timeout: 5000 });
+      }
+    } catch (err) {
+      // Ignore if not visible or already passed
+    }
+
     await use(window);
   },
 });

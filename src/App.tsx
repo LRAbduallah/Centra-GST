@@ -6,6 +6,7 @@ import InvoiceEditor from './components/InvoiceEditor';
 import InvoiceHistory from './components/InvoiceHistory';
 import SettingsScreen from './components/SettingsScreen';
 import DatabaseSetupScreen from './components/DatabaseSetupScreen';
+import DisclaimerScreen from './components/DisclaimerScreen';
 import { Profile, Product, Invoice } from './types';
 import { db } from './db';
 
@@ -73,6 +74,13 @@ export default function App() {
           return;
         }
 
+        const termsAccepted = await db.getSetting('terms_accepted');
+        if (!termsAccepted) {
+          setScreen('disclaimer');
+          setIsLoaded(true);
+          return;
+        }
+
         const dbProfiles = await db.getProfiles();
         const activeId = await db.getSetting('active_profile');
 
@@ -97,6 +105,14 @@ export default function App() {
   const handleDbSetupComplete = async () => {
     try {
       setIsLoaded(false);
+      
+      const termsAccepted = await db.getSetting('terms_accepted');
+      if (!termsAccepted) {
+        setScreen('disclaimer');
+        setIsLoaded(true);
+        return;
+      }
+
       const dbProfiles = await db.getProfiles();
       const activeId = await db.getSetting('active_profile');
 
@@ -111,6 +127,33 @@ export default function App() {
     } catch (err) {
       console.error('Failed to load database after setup:', err);
       showToast('Error loading database profiles', 'error');
+    } finally {
+      setIsLoaded(true);
+    }
+  };
+
+  const handleAcceptTerms = async () => {
+    try {
+      setIsLoaded(false);
+      const ready = await db.isReady();
+      if (ready) {
+        await db.setSetting('terms_accepted', true);
+      }
+      
+      const dbProfiles = await db.getProfiles();
+      const activeId = await db.getSetting('active_profile');
+
+      setProfiles(dbProfiles);
+      setActiveProfileId(activeId);
+
+      if (dbProfiles.length === 0) {
+        setScreen('startup');
+      } else {
+        setScreen('new-invoice');
+      }
+    } catch (err) {
+      console.error('Failed to accept terms:', err);
+      showToast('Error saving agreement setting', 'error');
     } finally {
       setIsLoaded(true);
     }
@@ -172,7 +215,7 @@ export default function App() {
 
   // Switcher check on startup
   useEffect(() => {
-    if (!isLoaded || screen === 'db-setup') return;
+    if (!isLoaded || screen === 'db-setup' || screen === 'disclaimer') return;
     if (profiles.length === 0) {
       setScreen('startup');
       return;
@@ -291,6 +334,18 @@ export default function App() {
         <DatabaseSetupScreen
           onSetupComplete={handleDbSetupComplete}
           showToast={showToast}
+        />
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </div>
+    );
+  }
+
+  // Disclaimer and Terms screen
+  if (screen === 'disclaimer') {
+    return (
+      <div className="app-shell">
+        <DisclaimerScreen
+          onAccept={handleAcceptTerms}
         />
         <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>

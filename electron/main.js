@@ -286,8 +286,12 @@ app.whenReady().then(() => {
   });
 });
 
+app.on('will-quit', () => {
+  db.closeDatabase();
+});
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin' || isTest) {
     app.quit();
   }
 });

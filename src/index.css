@@ -1551,6 +1551,22 @@ body {
   background: var(--color-text-darker);
 }
 
+/* Disclaimer and Terms Onboarding Styling */
+.disclaimer-scroll-box {
+  scroll-behavior: smooth;
+}
+.disclaimer-scroll-box h4 {
+  font-family: var(--font-sans);
+}
+.scroll-indicator svg {
+  animation: pulse-slow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(2px); }
+}
+
 /* ==========================================================================
    PRINT SPECIFIC CSS
    ========================================================================== */
