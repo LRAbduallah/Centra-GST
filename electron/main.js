@@ -2,11 +2,68 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const db = require('./database');
+const { autoUpdater } = require('electron-updater');
 
 // Allow E2E tests to override the userData path for isolation
 if (process.env.ELECTRON_USER_DATA) {
   app.setPath('userData', process.env.ELECTRON_USER_DATA);
 }
+// Single Instance Lock
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+// Setup local rolling log file writer
+const logPath = path.join(app.getPath('userData'), 'app.log');
+
+try {
+  if (fs.existsSync(logPath) && fs.statSync(logPath).size > 10 * 1024 * 1024) {
+    fs.renameSync(logPath, logPath + '.old');
+  }
+} catch (e) {
+  // Ignore
+}
+
+function writeLog(level, ...args) {
+  const timestamp = new Date().toISOString();
+  const message = args.map(arg => {
+    if (arg instanceof Error) return arg.stack;
+    if (typeof arg === 'object') {
+      try { return JSON.stringify(arg); } catch (e) { return String(arg); }
+    }
+    return String(arg);
+  }).join(' ');
+  const line = `[${timestamp}] [${level}] ${message}\n`;
+  try {
+    fs.appendFileSync(logPath, line);
+  } catch (e) {
+    process.stderr.write(`Failed writing to log file: ${e.message}\n`);
+  }
+  if (level === 'ERROR') {
+    process.stderr.write(`${message}\n`);
+  } else {
+    process.stdout.write(`${message}\n`);
+  }
+}
+
+console.log = (...args) => writeLog('INFO', ...args);
+console.error = (...args) => writeLog('ERROR', ...args);
+console.warn = (...args) => writeLog('WARN', ...args);
+
+process.on('uncaughtException', (error) => {
+  console.error('UNCAUGHT EXCEPTION:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
 
 const isTest = process.env.NODE_ENV === 'test';
 let mainWindow;
@@ -154,6 +211,49 @@ ipcMain.handle('db-set-setting', async (event, { key, value }) => {
   return db.setSetting(key, value);
 });
 
+function backupDatabase(dbPath) {
+  try {
+    if (!dbPath || !fs.existsSync(dbPath)) return;
+
+    const dbDir = path.dirname(dbPath);
+    const backupDir = path.join(dbDir, 'backups');
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+    }
+
+    const timestamp = new Date().toISOString()
+      .replace(/T/, '_')
+      .replace(/\..+/, '')
+      .replace(/:/g, '-');
+    const backupFileName = `backup_${timestamp}.db`;
+    const backupPath = path.join(backupDir, backupFileName);
+
+    fs.copyFileSync(dbPath, backupPath);
+    console.log(`Database backup created at ${backupPath}`);
+
+    // Retain only the latest 3 backups
+    const files = fs.readdirSync(backupDir);
+    const dbBackups = files
+      .filter(f => f.startsWith('backup_') && f.endsWith('.db'))
+      .map(f => ({
+        name: f,
+        filePath: path.join(backupDir, f),
+        mtime: fs.statSync(path.join(backupDir, f)).mtimeMs
+      }))
+      .sort((a, b) => a.mtime - b.mtime); // oldest first
+
+    while (dbBackups.length > 3) {
+      const oldest = dbBackups.shift();
+      if (oldest) {
+        fs.unlinkSync(oldest.filePath);
+        console.log(`Deleted oldest database backup: ${oldest.name}`);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to create automatic local database backup:', err);
+  }
+}
+
 const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
 let dbInitialized = false;
 
@@ -227,6 +327,7 @@ ipcMain.handle('db-select-open', async () => {
     }
 
     const filePath = result.filePaths[0];
+    backupDatabase(filePath);
     db.initDatabase(filePath);
     dbInitialized = true;
 
@@ -269,6 +370,7 @@ app.whenReady().then(() => {
     const config = getSavedConfig();
     if (config.databasePath && fs.existsSync(config.databasePath)) {
       try {
+        backupDatabase(config.databasePath);
         db.initDatabase(config.databasePath);
         dbInitialized = true;
       } catch (err) {
@@ -278,6 +380,13 @@ app.whenReady().then(() => {
   }
 
   createWindow();
+
+  // Check for updates if packaged and not in E2E tests
+  if (app.isPackaged && !isTest) {
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+      console.error('Failed checking for updates:', err);
+    });
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

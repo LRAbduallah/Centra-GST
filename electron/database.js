@@ -15,8 +15,12 @@ function initDatabase(dbPath) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
-  // Create tables & indexes
-  db.exec(`
+  // Database migration version check
+  const currentVersion = db.pragma('user_version', { simple: true });
+  
+  const migrations = [
+    // Version 1: Initial schema setup
+    `
     CREATE TABLE IF NOT EXISTS profiles (
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL,
@@ -44,7 +48,16 @@ function initDatabase(dbPath) {
 
     CREATE INDEX IF NOT EXISTS idx_catalog_profile_id ON catalog(profile_id);
     CREATE INDEX IF NOT EXISTS idx_invoices_profile_id ON invoices(profile_id);
-  `);
+    `
+  ];
+
+  for (let i = currentVersion; i < migrations.length; i++) {
+    db.transaction(() => {
+      db.exec(migrations[i]);
+      db.pragma(`user_version = ${i + 1}`);
+    })();
+    console.log(`Database migrated to version ${i + 1}`);
+  }
 }
 
 function getProfiles() {
