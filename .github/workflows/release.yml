@@ -27,7 +27,10 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: |
+          npm config set msvs_version 2022
+          npm ci --msvs_version=2022
+        shell: bash
 
       - name: Build Frontend Web Assets
         run: npm run build
