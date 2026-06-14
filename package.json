@@ -45,7 +45,7 @@
   },
   "build": {
     "appId": "com.centragst.app",
-    "productName": "CentraGST Suite",
+    "productName": "CentraGST",
     "publish": [
       {
         "provider": "github",

@@ -62,10 +62,10 @@ export default function DatabaseSetupScreen({ onSetupComplete, showToast }: Data
               marginBottom: '20px',
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
             }}
-            alt="CentraGST Suite Logo"
+            alt="CentraGST Logo"
           />
 
-          <h2>Welcome to CentraGST Suite</h2>
+          <h2>Welcome to CentraGST</h2>
           <p className="subtitle" style={{ maxWidth: '480px', margin: '8px auto 32px auto', lineHeight: '1.6' }}>
             Select where you would like to store your local database. All your business profiles, settings, and invoices will be stored securely at this location.
           </p>

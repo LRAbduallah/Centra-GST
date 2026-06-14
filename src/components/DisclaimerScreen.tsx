@@ -50,9 +50,9 @@ export default function DisclaimerScreen({ onAccept }: DisclaimerScreenProps) {
               marginBottom: '16px',
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
             }}
-            alt="CentraGST Suite Logo"
+            alt="CentraGST Logo"
           />
-          <h2>CentraGST Suite</h2>
+          <h2>CentraGST</h2>
           <div className="enterprise-badge" style={{
             fontSize: '11px',
             textTransform: 'uppercase',
@@ -98,12 +98,12 @@ export default function DisclaimerScreen({ onAccept }: DisclaimerScreenProps) {
 
           <h4 style={{ color: 'white', fontSize: '13px', margin: '14px 0 6px 0', fontWeight: 600 }}>1. Offline Local Architecture</h4>
           <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)' }}>
-            CentraGST Suite operates entirely as an offline local application. All business profiles, invoices, product catalogs, and configurations are stored directly on your computer's local hard drive via an SQLite database. The developers do not host, store, transfer, or maintain any of your database records, business data, or generated invoices. You are solely responsible for managing, backing up, and securing your database file.
+            CentraGST operates entirely as an offline local application. All business profiles, invoices, product catalogs, and configurations are stored directly on your computer's local hard drive via an SQLite database. The developers do not host, store, transfer, or maintain any of your database records, business data, or generated invoices. You are solely responsible for managing, backing up, and securing your database file.
           </p>
 
           <h4 style={{ color: 'white', fontSize: '13px', margin: '14px 0 6px 0', fontWeight: 600 }}>2. Complete Exculpation of Liability</h4>
           <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)' }}>
-            Under no circumstances shall the developer(s), contributors, or distributors of CentraGST Suite be held liable for any direct, indirect, incidental, special, or consequential damages. This includes, but is not limited to, damages for loss of profits, tax penalties, audit adjustments, business interruptions, loss of data, or incorrect financial and tax calculations resulting from the use or inability to use this software.
+            Under no circumstances shall the developer(s), contributors, or distributors of CentraGST be held liable for any direct, indirect, incidental, special, or consequential damages. This includes, but is not limited to, damages for loss of profits, tax penalties, audit adjustments, business interruptions, loss of data, or incorrect financial and tax calculations resulting from the use or inability to use this software.
           </p>
 
           <h4 style={{ color: 'white', fontSize: '13px', margin: '14px 0 6px 0', fontWeight: 600 }}>3. No Financial, Legal, or Tax Advice</h4>

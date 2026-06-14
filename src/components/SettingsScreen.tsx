@@ -523,7 +523,7 @@ export default function SettingsScreen({
                   <div>
                     <h4 style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>Local Backup Security</h4>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '4px', lineHeight: '1.6' }}>
-                      CentraGST Suite lives entirely inside a secure offline local SQLite3 database. To prevent data loss
+                      CentraGST lives entirely inside a secure offline local SQLite3 database. To prevent data loss
                       due to hardware failures or to sync your configuration to another computer, we recommend exporting standard 
                       database backups periodically.
                     </p>

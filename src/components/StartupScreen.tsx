@@ -26,9 +26,9 @@ export default function StartupScreen({ profiles, onSelect, onAdd }: StartupScre
                 marginBottom: '16px',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
               }}
-              alt="CentraGST Suite Logo"
+              alt="CentraGST Logo"
             />
-            <h2>CentraGST Suite</h2>
+            <h2>CentraGST</h2>
             <p className="subtitle">Select a business profile to start billing</p>
           </div>
 
@@ -66,9 +66,9 @@ export default function StartupScreen({ profiles, onSelect, onAdd }: StartupScre
               marginBottom: '20px',
               boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
             }}
-            alt="CentraGST Suite Logo"
+            alt="CentraGST Logo"
           />
-          <h2>Welcome to CentraGST Suite</h2>
+          <h2>Welcome to CentraGST</h2>
           <p className="subtitle">
             Create your first business profile to generate GST-compliant tax bills.
           </p>

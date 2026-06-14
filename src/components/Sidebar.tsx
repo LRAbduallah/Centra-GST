@@ -57,11 +57,11 @@ export default function Sidebar({
                 src={logoImg}
                 style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0 }}
                 onClick={onToggleCollapse}
-                alt="CentraGST Suite Logo"
-                title={isCollapsed ? 'Expand Sidebar' : 'CentraGST Suite'}
+                alt="CentraGST Logo"
+                title={isCollapsed ? 'Expand Sidebar' : 'CentraGST'}
               />
               <div className="sidebar-text" style={{ display: 'flex', flexDirection: 'column' }}>
-                <h1 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>CentraGST Suite</h1>
+                <h1 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>CentraGST</h1>
                 <p style={{ margin: '2px 0 0', fontSize: '10px', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                   Enterprise Billing System
                 </p>
