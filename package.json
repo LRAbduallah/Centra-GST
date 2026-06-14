@@ -1,0 +1,81 @@
+{
+  "name": "Centra-GST",
+  "version": "1.0.0",
+  "description": "GST-compliant tax bill desktop application",
+  "author": "CentraGST Dev <rafiabullah0@gmail.com>",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "tsc && vite build",
+    "electron:build": "npm run build && electron-builder --win --mac",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "electron-updater": "^6.8.9",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.378.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@types/testing-library__jest-dom": "^5.14.9",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^4.1.8",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3",
+    "jsdom": "^29.1.1",
+    "playwright-core": "^1.60.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.4",
+    "vitest": "^4.1.8"
+  },
+  "build": {
+    "appId": "com.centragst.app",
+    "productName": "CentraGST",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "LRAbduallah",
+        "repo": "Centra-GST"
+      }
+    ],
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.business",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}

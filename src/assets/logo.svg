@@ -1,0 +1,30 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gold / Orange - Crimson Gradient -->
+    <linearGradient id="primaryGrad" x1="25" y1="25" x2="75" y2="75" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+    
+    <!-- Accent Gradient -->
+    <linearGradient id="accentGrad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Scaled group to make the logo fill the standard application icon size -->
+  <g transform="translate(50, 50) scale(2.0) translate(-50, -50)">
+    <!-- Stylized letter 'C' in glowing orange-rose gradient -->
+    <path d="M62 34 C58 30, 48 30, 42 36 C36 42, 36 58, 42 64 C48 70, 58 70, 62 66" stroke="url(#accentGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+    <!-- Stylized letter 'G' inside in glowing crimson gradient -->
+    <path d="M54 44 H64 V56 C64 60, 58 64, 52 64 C46 64, 42 60, 42 54" stroke="url(#primaryGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  </g>
+</svg>

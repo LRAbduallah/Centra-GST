@@ -1,0 +1,156 @@
+/**
+ * Playwright E2E fixture: Electron app launcher
+ *
+ * Launches the real Electron desktop app pointing at the pre-built dist/index.html.
+ * Each test gets a fresh app window with an isolated temp userData directory.
+ *
+ * Requires: `npm run build` to have been run first.
+ */
+import { test as base, expect } from '@playwright/test';
+import { _electron as electron, ElectronApplication, Page } from 'playwright';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
+
+export type ElectronFixture = {
+  app: ElectronApplication;
+  page: Page;
+};
+
+export const test = base.extend<ElectronFixture>({
+  app: async ({}, use) => {
+    const tmpUserData = fs.mkdtempSync(path.join(os.tmpdir(), 'centragst-e2e-'));
+
+    const electronApp = await electron.launch({
+      args: [path.join(__dirname, '../../electron/main.js')],
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        ELECTRON_USER_DATA: tmpUserData,
+      },
+    });
+
+    await use(electronApp);
+
+    await electronApp.close();
+    fs.rmSync(tmpUserData, { recursive: true, force: true });
+  },
+
+  page: async ({ app }, use) => {
+    const window = await app.firstWindow();
+    window.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    window.on('pageerror', err => console.error('PAGE ERROR:', err.message));
+    await window.waitForLoadState('domcontentloaded');
+    
+    // Wait for database loading screen to disappear
+    await window.waitForSelector('text=Loading Database...', { state: 'hidden', timeout: 15_000 });
+
+    try {
+      // Wait up to 3 seconds for either disclaimer, welcome setup button, or dashboard sidebar to be visible
+      await Promise.any([
+        window.waitForSelector('.disclaimer-scroll-box', { state: 'visible', timeout: 3000 }),
+        window.waitForSelector('text=Set Up My Business', { state: 'visible', timeout: 3000 }),
+        window.waitForSelector('.sidebar-footer', { state: 'visible', timeout: 3000 })
+      ]);
+    } catch (e) {
+      // Ignore
+    }
+
+    // Automatically accept the developer disclaimer / terms of service if displayed
+    const disclaimer = window.locator('.disclaimer-scroll-box');
+    try {
+      if (await disclaimer.isVisible()) {
+        await disclaimer.evaluate(el => {
+          el.scrollTop = el.scrollHeight;
+          el.dispatchEvent(new Event('scroll'));
+        });
+        // Wait briefly for scroll trigger state to bind
+        await window.waitForTimeout(200);
+        await window.check('#accept-terms-checkbox');
+        await window.click('button:has-text("Accept & Continue")');
+        await window.waitForSelector('.disclaimer-scroll-box', { state: 'hidden', timeout: 5000 });
+      }
+    } catch (err) {
+      // Ignore if not visible or already passed
+    }
+
+    await use(window);
+  },
+});
+
+export { expect };
+
+/**
+ * Click an element that triggers the ConfirmModal, then confirm it.
+ * @param page - Playwright page
+ * @param trigger - Locator for the button/element that opens the modal
+ * @param confirmLabel - Label on the confirm button inside the modal (default: 'Confirm')
+ */
+export async function confirmModal(page: Page, trigger: any, confirmLabel = 'Confirm') {
+  await trigger.click();
+  // Wait for the ConfirmModal overlay to appear
+  await page.waitForSelector('.modal-overlay', { timeout: 5_000 });
+  // Click the confirm button by its text label
+  await page.locator(`.modal-overlay button:has-text("${confirmLabel}")`).last().click();
+  // Wait for the modal to close
+  await page.waitForSelector('.modal-overlay', { state: 'hidden', timeout: 5_000 }).catch(() => {});
+}
+
+/**
+ * Click the "New Invoice" button and confirm the ConfirmModal that appears.
+ */
+export async function clickNewInvoice(page: Page) {
+  await confirmModal(page, page.locator('button:has-text("New Invoice")'), 'Yes, New Invoice');
+}
+
+/**
+ * Completes the 4-step ProfileModal wizard using exact placeholder values.
+ *
+ * Step 0 – Business Identity  : Profile Label, Business Name
+ * Step 1 – Contact & GST      : GSTIN, Address Line 1, Phone
+ * Step 2 – GST & Invoice Config: Invoice Prefix (GST defaults are valid by default)
+ * Step 3 – Footer & Terms     : Optional → click "Save Business"
+ */
+export async function fillProfileWizard(page: Page, overrides: Record<string, string> = {}) {
+  const data = {
+    name: overrides.name || 'Vision Opticals',
+    bizName: overrides.bizName || 'Vision Opticals Pvt Ltd',
+    gstNo: overrides.gstNo || '33AAYFV2352E1ZZ',
+    address1: overrides.address1 || '123 MG Road, Bengaluru',
+    phone: overrides.phone || '9876543210',
+    invoicePrefix: overrides.invoicePrefix || 'VIS',
+  };
+
+  // Wait for the modal body to appear
+  await page.waitForSelector('.modal-body', { timeout: 8_000 });
+
+  // ── Step 0: Business Identity ──────────────────────────────────────────
+  await page.locator('[placeholder="e.g. Vision Opticals (Nagercoil)"]').fill(data.name);
+  await page.locator('[placeholder="VISION OPTICALS"]').fill(data.bizName);
+  await clickNext(page);
+
+  // ── Step 1: Contact & GST ──────────────────────────────────────────────
+  await page.locator('[placeholder="33AAYFV2352E1ZZ"]').fill(data.gstNo);
+  await page.locator('[placeholder="961, OPP: Dr.J. Mathias KP Road"]').fill(data.address1);
+  await page.locator('[placeholder="04652-220560"]').fill(data.phone);
+  await clickNext(page);
+
+  // ── Step 2: GST & Invoice Config ───────────────────────────────────────
+  // Default GST=18, CGST=9, SGST=9 → valid (9+9=18), Next button is enabled
+  // Fill invoice prefix
+  await page.locator('[placeholder="e.g. VO-"]').fill(data.invoicePrefix);
+  await clickNext(page);
+
+  // ── Step 3: Footer & Terms (optional) → Save Business ─────────────────
+  await page.locator('.modal-footer button:has-text("Save Business")').click();
+
+  // Wait for modal to close
+  await page.waitForSelector('.modal-body', { state: 'hidden', timeout: 8_000 });
+}
+
+async function clickNext(page: Page) {
+  const btn = page.locator('.modal-footer button:has-text("Next")');
+  await btn.waitFor({ timeout: 3_000 });
+  await btn.click();
+  await page.waitForTimeout(300);
+}
