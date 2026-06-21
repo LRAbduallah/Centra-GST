@@ -81,3 +81,74 @@ export const testInvoice: Invoice = {
   generatedAt: Date.now(),
   status: 'generated',
 };
+
+// 1. Profile with 12% default GST
+export const b2bProfile: Profile = {
+  ...testProfile,
+  id: 'profile-b2b-001',
+  name: 'B2B Wholesale Opticals',
+  bizName: 'B2B Wholesale Hub Ltd',
+  gstRate: 12,
+  cgstPct: 6,
+  sgstPct: 6,
+  invoicePrefix: 'BWH',
+};
+
+// 2. Products with specific UOM and GST
+export const testProduct3: Product = {
+  id: 'prod-003',
+  name: 'Designer Frame Box',
+  hsn: '9003',
+  rate: '5000',
+  category: 'Frames',
+  gstPct: 12,
+  unit: 'BOX',
+};
+
+export const testProduct4: Product = {
+  id: 'prod-004',
+  name: 'Optics Raw Material',
+  hsn: '3901',
+  rate: '400',
+  category: 'Raw Materials',
+  gstPct: 5,
+  unit: 'KG',
+};
+
+// 3. High-Value B2B Invoice (value > ₹50,000) with mixed-slab lines, UOM, and pre-tax discount
+export const b2bInvoice: Invoice = {
+  id: 'inv-b2b-001',
+  profileId: b2bProfile.id,
+  customerName: 'APEX EYE CLINIC',
+  mobile: '9123456789',
+  customerGst: '33AAAAA1111A1Z1', // Tamil Nadu GSTIN
+  date: '21-06-2026',
+  invoiceNo: 'BWH1',
+  items: [
+    {
+      id: 'b2b-item-001',
+      hsn: '9003',
+      description: 'Designer Frame Box',
+      qty: 10,
+      netRate: 5000, // tax-inclusive rate. 10 * 5000 = 50000 gross. 12% GST.
+      gstPct: 12,
+      unit: 'BOX',
+    },
+    {
+      id: 'b2b-item-002',
+      hsn: '3901',
+      description: 'Optics Raw Material',
+      qty: 30,
+      netRate: 400, // 30 * 400 = 12000 gross. 5% GST.
+      gstPct: 5,
+      unit: 'KG',
+    },
+  ],
+  profileSnapshot: { ...b2bProfile },
+  generatedAt: Date.now(),
+  status: 'generated',
+  customerAddress: '456 Cathedral Road, Chennai\nTamil Nadu - 600086',
+  placeOfSupply: 'TAMIL NADU (33)',
+  discount: 2000, // Pre-tax discount of ₹2,000
+};
+

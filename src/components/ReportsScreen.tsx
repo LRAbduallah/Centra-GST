@@ -783,7 +783,7 @@ export default function ReportsScreen({ profile, showToast }: ReportsScreenProps
             <tbody>
               {reportData.lines.length > 0 ? (
                 reportData.lines.map((line, idx) => (
-                  <tr key={line.id || idx}>
+                  <tr key={`${line.invoiceNo}-${line.id}-${idx}`}>
                     <td className="center">{idx + 1}</td>
                     <td className="center">
                       <div style={{ fontWeight: 600 }}>{line.invoiceNo}</div>

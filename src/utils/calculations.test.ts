@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calcLine, calcTotals } from './calculations';
+import { b2bInvoice, b2bProfile } from '../components/__tests__/fixtures';
 
 // ─────────────────────────────────────────────
 // calcLine()
@@ -193,4 +194,46 @@ describe('calcTotals()', () => {
     expect(t.totalGst).toBeCloseTo(17.25);
     expect(t.grandTotal).toBe(167);
   });
+
+  it('T11: calculates splits and discounts for the high-value B2B invoice scenario', () => {
+    const t = calcTotals(b2bInvoice.items, b2bProfile, b2bInvoice.discount);
+    // VIS1 Items:
+    // Item 1: 10 BOX, netRate 5000 (Incl. 12% GST). Total 50000. Taxable Net = 50000 / 1.12 = 44642.85
+    // Item 2: 30 KG, netRate 400 (Incl. 5% GST). Total 12000. Taxable Net = 12000 / 1.05 = 11428.57
+    // Gross Taxable Net = 44642.85 + 11428.57 = 56071.42
+    // Pre-tax discount = 2000.
+    // Taxable Net (post discount) = 56071.42 - 2000 = 54071.42
+    expect(t.subTotalBeforeDiscount).toBeCloseTo(56071.42, 1);
+    expect(t.discount).toBe(2000);
+    expect(t.subTotal).toBeCloseTo(54071.42, 1);
+    // Sum of post-discount tax:
+    // Item 1 shares 44642.85 / 56071.42 of 2000 discount = 1592.35. Net = 43050.5. Tax (12%) = 5166.06
+    // Item 2 shares 11428.57 / 56071.42 of 2000 discount = 407.65. Net = 11020.92. Tax (5%) = 551.04
+    // Total Tax = 5166.06 + 551.04 = 5717.1
+    expect(t.totalGst).toBeCloseTo(5717.1, 1);
+    expect(t.cgst).toBeCloseTo(t.totalGst / 2);
+    expect(t.sgst).toBeCloseTo(t.totalGst / 2);
+    expect(t.grandTotal).toBe(59789); // rounded 54071.42 + 5717.1 = 59788.52 -> 59789
+  });
 });
+
+describe('calcLine() — Edge cases & 12% Slab', () => {
+  it('U9: handles non-standard 12% GST slab correctly', () => {
+    const r = calcLine({ qty: 1, netRate: 112, gstPct: 12 }, 12);
+    expect(r.netRate).toBeCloseTo(100);
+    expect(r.gstAmt).toBeCloseTo(12);
+    expect(r.amount).toBe(112);
+  });
+
+  it('U10: handles negative and zero inputs gracefully', () => {
+    const rZero = calcLine({ qty: -2, netRate: 0, gstPct: 18 }, 18);
+    expect(rZero.qty).toBe(-2);
+    expect(rZero.netRate).toBe(0);
+    expect(rZero.amount).toBeCloseTo(0);
+
+    const tNegDiscount = calcTotals([{ qty: 1, netRate: 118, gstPct: 18 }], b2bProfile, -50);
+    expect(tNegDiscount.discount).toBe(0);
+    expect(tNegDiscount.subTotal).toBeCloseTo(100);
+  });
+});
+

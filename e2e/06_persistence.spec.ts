@@ -3,7 +3,7 @@
  * Tests that data survives an app restart (close + reopen).
  * This is the most critical test for the SQLite migration regression gate.
  */
-import { test as base, expect, fillProfileWizard } from './fixtures/electron.fixture';
+import { test as base, expect, fillProfileWizard, generateInvoice } from './fixtures/electron.fixture';
 import { _electron as electron, ElectronApplication } from 'playwright';
 import path from 'path';
 import fs from 'fs';
@@ -88,7 +88,7 @@ test.describe('Data Persistence Across Restarts', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'PERSIST USER');
     await page.locator('[placeholder="Description"]').first().fill('Persisted Lens');
     await page.locator('[placeholder="0.00"]').first().fill('999');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success:has-text("Invoice generated")');
     await app.close();
 
