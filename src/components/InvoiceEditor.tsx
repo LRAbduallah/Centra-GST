@@ -794,22 +794,7 @@ export default function InvoiceEditor({
             </div>
           )}
 
-          <div className="form-grid" style={{ marginTop: '16px' }}>
-            <div className="form-group">
-              <label className="form-label">Reverse Charge Applicable</label>
-              <select
-                className="form-input"
-                style={{ background: 'var(--bg-input)', color: 'var(--color-text)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '6px' }}
-                disabled={isGenerated}
-                value={inv.reverseCharge || 'No'}
-                onChange={(e) => updateInvField('reverseCharge', e.target.value)}
-              >
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-              </select>
-            </div>
-            <div className="form-group"></div>
-          </div>
+
         </div>
 
         {/* Section: Live Calculations Totals */}

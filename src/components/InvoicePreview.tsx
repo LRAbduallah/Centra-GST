@@ -149,9 +149,7 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
                 <strong>Terms:</strong> {profile.terms}
               </div>
             )}
-            <div style={{ marginTop: '8px', fontSize: '9px', fontWeight: 600 }}>
-              Reverse Charge Applicable: {invoice.reverseCharge || 'No'}
-            </div>
+
           </div>
           <div className="bill-stamp">
             <div className="bill-stamp-line" />
