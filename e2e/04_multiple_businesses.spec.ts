@@ -2,7 +2,7 @@
  * E2E: Multiple Business Profiles
  * Tests profile switching, isolated catalogs, and cross-profile invoice history.
  */
-import { test, expect, fillProfileWizard, clickNewInvoice } from './fixtures/electron.fixture';
+import { test, expect, fillProfileWizard, clickNewInvoice, generateInvoice } from './fixtures/electron.fixture';
 
 /** Navigate to Settings → Profiles tab */
 async function goToSettingsProfiles(page: any) {
@@ -62,7 +62,7 @@ test.describe('Multiple Business Profiles', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'OPTICARE CUSTOMER');
     await page.locator('[placeholder="Description"]').first().fill('Frame');
     await page.locator('[placeholder="0.00"]').first().fill('500');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
     // Check history
     await page.locator('.nav-item:has-text("Invoice History")').click();
@@ -75,7 +75,7 @@ test.describe('Multiple Business Profiles', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'PROFILE1 CUSTOMER');
     await page.locator('[placeholder="Description"]').first().fill('Lens');
     await page.locator('[placeholder="0.00"]').first().fill('100');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
     // Add profile 2 — dismiss ConfirmModal first
     await clickNewInvoice(page);
@@ -87,7 +87,7 @@ test.describe('Multiple Business Profiles', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'PROFILE2 CUSTOMER');
     await page.locator('[placeholder="Description"]').first().fill('Frame');
     await page.locator('[placeholder="0.00"]').first().fill('200');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
     // Check History — All
     await page.locator('.nav-item:has-text("Invoice History")').click();
@@ -101,7 +101,7 @@ test.describe('Multiple Business Profiles', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'P1 CUSTOMER');
     await page.locator('[placeholder="Description"]').first().fill('Lens');
     await page.locator('[placeholder="0.00"]').first().fill('100');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
     await clickNewInvoice(page);
     await goToSettingsProfiles(page);
@@ -111,7 +111,7 @@ test.describe('Multiple Business Profiles', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'P2 CUSTOMER');
     await page.locator('[placeholder="Description"]').first().fill('Frame');
     await page.locator('[placeholder="0.00"]').first().fill('200');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success', { timeout: 5_000 });
     // Go to history, filter by profile 1
     await page.locator('.nav-item:has-text("Invoice History")').click();

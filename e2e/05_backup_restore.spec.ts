@@ -2,7 +2,7 @@
  * E2E: Backup & Restore
  * Tests JSON full backup export, restore flow, and CSV catalog import.
  */
-import { test, expect, fillProfileWizard, clickNewInvoice, confirmModal } from './fixtures/electron.fixture';
+import { test, expect, fillProfileWizard, clickNewInvoice, confirmModal, generateInvoice } from './fixtures/electron.fixture';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
@@ -16,7 +16,7 @@ test.describe('Backup & Restore', () => {
     await page.fill('[placeholder*="JOHN DOE"]', 'BACKUP CUSTOMER');
     await page.locator('[placeholder="Description"]').first().fill('Backup Lens');
     await page.locator('[placeholder="0.00"]').first().fill('1000');
-    await page.click('button:has-text("Generate Invoice")');
+    await generateInvoice(page);
     await page.waitForSelector('.toast-message.success:has-text("Invoice generated")');
     // Dismiss the ConfirmModal so no overlay blocks subsequent test actions
     await clickNewInvoice(page);

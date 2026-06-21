@@ -5,6 +5,7 @@ import ProfileModal from './components/ProfileModal';
 import InvoiceEditor from './components/InvoiceEditor';
 import InvoiceHistory from './components/InvoiceHistory';
 import SettingsScreen from './components/SettingsScreen';
+import ReportsScreen from './components/ReportsScreen';
 import DatabaseSetupScreen from './components/DatabaseSetupScreen';
 import DisclaimerScreen from './components/DisclaimerScreen';
 import { Profile, Product, Invoice } from './types';
@@ -408,6 +409,7 @@ export default function App() {
           <h2>
             {screen === 'new-invoice' && 'New Invoice'}
             {screen === 'history' && 'Invoice History'}
+            {screen === 'reports' && 'Sales & GST Reports'}
             {screen === 'settings' && 'Settings'}
           </h2>
           <div className="topbar-info">
@@ -437,6 +439,10 @@ export default function App() {
             <InvoiceHistory profiles={profiles} showToast={showToast} />
           )}
 
+          {screen === 'reports' && activeProfile && (
+            <ReportsScreen profile={activeProfile} showToast={showToast} />
+          )}
+
           {screen === 'settings' && (
             <SettingsScreen
               profiles={profiles}
@@ -447,6 +453,7 @@ export default function App() {
               onUpdateCatalog={updateCatalog}
               onAddToInvoice={handleAddProductToInvoice}
               showToast={showToast}
+              profile={activeProfile || undefined}
             />
           )}
         </div>

@@ -26,6 +26,7 @@ const DEFAULT_PROFILE: Omit<Profile, 'id'> = {
   invoiceFormat: 'PREFIX_COUNTER',
   bankDetails: '',
   terms: '',
+  hsnLabel: 'HSN',
 };
 
 export default function ProfileModal({ profile, onSave, onCancel }: ProfileModalProps) {
@@ -59,30 +60,33 @@ export default function ProfileModal({ profile, onSave, onCancel }: ProfileModal
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      const MAX = 400;
-      let w = img.width;
-      let h = img.height;
-      if (w > MAX || h > MAX) {
-        if (w > h) {
-          h = Math.round((h * MAX) / w);
-          w = MAX;
-        } else {
-          w = Math.round((w * MAX) / h);
-          h = MAX;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 400;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) {
+            h = Math.round((h * MAX) / w);
+            w = MAX;
+          } else {
+            w = Math.round((w * MAX) / h);
+            h = MAX;
+          }
         }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, w, h);
-      updateField('logo', canvas.toDataURL('image/jpeg', 0.75));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, w, h);
+        updateField('logo', canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = dataUrl;
     };
-    img.src = objectUrl;
+    reader.readAsDataURL(file);
   };
 
   const removeLogo = (e: React.MouseEvent) => {
@@ -373,6 +377,19 @@ export default function ProfileModal({ profile, onSave, onCancel }: ProfileModal
                 <option value="PREFIX_COUNTER">Prefix + Counter (e.g. VO-0001)</option>
                 <option value="YEAR_COUNTER">Year/Counter (e.g. 2026/0001)</option>
               </select>
+            </div>
+          </div>
+
+          <div className="form-grid single" style={{ marginTop: '8px' }}>
+            <div className="form-group">
+              <label className="form-label">HSN Field Label (e.g. HSN, Serial No, S.No)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. HSN (default)"
+                value={state.hsnLabel || ''}
+                onChange={(e) => updateField('hsnLabel', e.target.value)}
+              />
             </div>
           </div>
         </div>

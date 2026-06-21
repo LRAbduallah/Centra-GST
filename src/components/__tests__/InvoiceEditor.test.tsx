@@ -33,14 +33,14 @@ beforeEach(() => {
 // Live Totals & Form Validation
 // ─────────────────────────────────────────────
 describe('InvoiceEditor — Live Totals & Form', () => {
-  it('C1: entering netRate=100 shows grand total of ₹118.00', async () => {
+  it('C1: entering netRate=100 shows grand total of ₹100.00', async () => {
     renderEditor();
     const rateInput = screen.getAllByPlaceholderText('0.00')[0];
     await userEvent.clear(rateInput);
     await userEvent.type(rateInput, '100');
-    // Grand total row should show ₹118.00 (18% GST)
+    // Grand total row should show ₹100.00 (tax-inclusive)
     await waitFor(() => {
-      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹118.00');
+      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹100.00');
     });
   });
 
@@ -53,7 +53,7 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     await userEvent.clear(qtyInput);
     await userEvent.type(qtyInput, '3');
     await waitFor(() => {
-      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹354.00');
+      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹300.00');
     });
   });
 
@@ -92,6 +92,9 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     // Generate
     const btn = screen.getByText(/Generate Invoice/i);
     await userEvent.click(btn);
+    // Confirm inside the modal
+    await waitFor(() => screen.getByText(/Generate & Save/i));
+    await userEvent.click(screen.getByText(/Generate & Save/i));
     await waitFor(() => {
       expect(customerInput).toBeDisabled();
     });
@@ -106,6 +109,9 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     const rateInput = screen.getAllByPlaceholderText('0.00')[0];
     fireEvent.change(rateInput, { target: { value: '100' } });
     await userEvent.click(screen.getByText(/Generate Invoice/i));
+    // Confirm inside the modal
+    await waitFor(() => screen.getByText(/Generate & Save/i));
+    await userEvent.click(screen.getByText(/Generate & Save/i));
     await waitFor(() => screen.getByText(/New Invoice/i));
     // Click "New Invoice" — this opens the ConfirmModal
     await userEvent.click(screen.getByText(/New Invoice/i));
@@ -209,3 +215,72 @@ describe('InvoiceEditor — Catalog Browser Modal', () => {
     expect(screen.getByText(/No catalog items found/i)).toBeInTheDocument();
   });
 });
+
+describe('InvoiceEditor — Enhanced Mock Scenarios', () => {
+  it('C10: Pre-tax discount input live updates calculations in totals panel', async () => {
+    const { container } = renderEditor();
+    // Set item rate to 118 (with default 18% GST, pre-tax net = 100)
+    const rateInput = screen.getAllByPlaceholderText('0.00')[0];
+    await userEvent.clear(rateInput);
+    await userEvent.type(rateInput, '118');
+
+    // Enter a pre-tax discount of ₹20
+    const totalsPanel = container.querySelector('.form-totals-panel') as HTMLElement;
+    const discountInput = totalsPanel.querySelector('input[type="number"]') as HTMLInputElement;
+    await userEvent.clear(discountInput);
+    await userEvent.type(discountInput, '20');
+
+    await waitFor(() => {
+      // Sub Total before discount = 100.00
+      // Taxable Sub Total after discount = 80.00
+      // GST collected = 80 * 18% = 14.40
+      // Grand Total = 80 + 14.4 = 94.4 -> rounded 94.00
+      expect(screen.getByText('Taxable Sub Total (After Discount)').closest('div')).toHaveTextContent('₹80.00');
+      expect(screen.getByText('GST Tax Amount').closest('div')).toHaveTextContent('₹14.40');
+      expect(screen.getByText('Grand Total').closest('div')).toHaveTextContent('₹94.00');
+    });
+  });
+
+  it('C11: Customer Address and Place of Supply inputs render correctly in live preview', async () => {
+    const { container } = renderEditor();
+    
+    const addressInput = container.querySelector('textarea') as HTMLTextAreaElement;
+    await userEvent.type(addressInput, 'Chennai, Tamil Nadu');
+
+    const supplyInput = container.querySelector('input[placeholder*="TAMIL NADU"]') as HTMLInputElement;
+    await userEvent.type(supplyInput, 'TAMIL NADU (33)');
+
+    await waitFor(() => {
+      // Address and Place of Supply should render in live preview
+      const preview = container.querySelector('#bill-preview') as HTMLElement;
+      expect(within(preview).getByText(/Chennai, Tamil Nadu/i)).toBeInTheDocument();
+      expect(within(preview).getByText(/TAMIL NADU \(33\)/i)).toBeInTheDocument();
+    });
+  });
+
+  it('C12: Item UOM edits and item-level GST slab selections recalculate rates correctly', async () => {
+    const { container } = renderEditor();
+
+    // Check UOM input and type 'BOX'
+    const uomInput = screen.getAllByPlaceholderText('PCS')[0];
+    await userEvent.clear(uomInput);
+    await userEvent.type(uomInput, 'BOX');
+
+    // Set item-level GST select to 5% instead of default 18%
+    const gstSelect = container.querySelector('.editor-table select') as HTMLSelectElement;
+    await userEvent.selectOptions(gstSelect, '5');
+
+    // Type tax-inclusive rate 105
+    const firstRow = container.querySelector('.editor-table tbody tr') as HTMLTableRowElement;
+    const rateInput = firstRow.querySelectorAll('input[type="number"]')[1] as HTMLInputElement;
+    await userEvent.clear(rateInput);
+    await userEvent.type(rateInput, '105');
+
+    await waitFor(() => {
+      // Taxable Net rate should calculate as 100.00 (105 / 1.05) and display in preview
+      expect(screen.getAllByText('₹100.00')[0]).toBeInTheDocument();
+      expect(screen.getAllByText('@5%')[0]).toBeInTheDocument();
+    });
+  });
+});
+

@@ -104,6 +104,14 @@ export async function clickNewInvoice(page: Page) {
 }
 
 /**
+ * Click "Generate Invoice" and confirm the generation modal.
+ */
+export async function generateInvoice(page: Page) {
+  await page.click('button:has-text("Generate Invoice")');
+  await page.click('button:has-text("Generate & Save")');
+}
+
+/**
  * Completes the 4-step ProfileModal wizard using exact placeholder values.
  *
  * Step 0 – Business Identity  : Profile Label, Business Name

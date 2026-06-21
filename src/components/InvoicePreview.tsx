@@ -8,12 +8,14 @@ interface InvoicePreviewProps {
 }
 
 export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps) {
-  const { lines, subTotal, totalGst, grandTotal, roundOff, cgst, sgst, cgstPct, sgstPct } = useMemo(
-    () => calcTotals(invoice.items || [], profile),
-    [invoice.items, profile]
+  const { lines, subTotal, totalGst, grandTotal, roundOff, cgst, sgst, cgstPct, sgstPct, subTotalBeforeDiscount } = useMemo(
+    () => calcTotals(invoice.items || [], profile, invoice.discount || 0),
+    [invoice.items, profile, invoice.discount]
   );
 
   const formatCurrency = (val: number) => Number(val || 0).toFixed(2);
+
+  const hsnLabel = invoice.profileSnapshot?.hsnLabel || profile.hsnLabel || 'HSN';
 
   return (
     <div className="bill-wrapper" id="bill-preview">
@@ -64,6 +66,18 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
               {invoice.customerGst}
             </div>
           )}
+          {invoice.placeOfSupply && (
+            <div>
+              <label>Place of Supply:</label>
+              {invoice.placeOfSupply}
+            </div>
+          )}
+          {invoice.customerAddress && (
+            <div style={{ marginTop: '4px', display: 'flex', gap: '4px' }}>
+              <label style={{ flexShrink: 0 }}>Address:</label>
+              <span style={{ fontSize: '9px', opacity: 0.95, whiteSpace: 'pre-line' }}>{invoice.customerAddress}</span>
+            </div>
+          )}
         </div>
         <div className="bill-customer-right">
           <div>
@@ -82,11 +96,11 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
         <table className="bill-table">
           <thead>
             <tr>
-              <th style={{ width: '12%' }}>HSN</th>
+              <th style={{ width: '12%' }}>{hsnLabel}</th>
               <th style={{ width: '38%', textAlign: 'left' }}>Description</th>
-              <th style={{ width: '8%' }}>Qty</th>
+              <th style={{ width: '10%' }}>Qty</th>
               <th style={{ width: '13%' }}>NetRate</th>
-              <th style={{ width: '12%' }}>GST (%)</th>
+              <th style={{ width: '12%' }}>GST</th>
               <th style={{ width: '13%' }}>Rate</th>
               <th style={{ width: '14%' }}>Amount</th>
             </tr>
@@ -97,9 +111,12 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
                 <tr key={line.id || idx}>
                   <td className="td-center">{line.hsn || '—'}</td>
                   <td>{line.description || '—'}</td>
-                  <td className="td-center">{line.qty || 0}</td>
+                  <td className="td-center">{line.qty || 0} {line.unit || 'PCS'}</td>
                   <td className="td-right">₹{formatCurrency(line.netRate)}</td>
-                  <td className="td-center">{line.gstPct}%</td>
+                  <td className="td-center">
+                    <div>₹{formatCurrency(line.lineGstAmt)}</div>
+                    <div style={{ fontSize: '9px', opacity: 0.65 }}>@{line.gstPct}%</div>
+                  </td>
                   <td className="td-right">₹{formatCurrency(line.rate)}</td>
                   <td className="td-right">₹{formatCurrency(line.amount)}</td>
                 </tr>
@@ -132,6 +149,7 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
                 <strong>Terms:</strong> {profile.terms}
               </div>
             )}
+
           </div>
           <div className="bill-stamp">
             <div className="bill-stamp-line" />
@@ -142,16 +160,28 @@ export default function InvoicePreview({ invoice, profile }: InvoicePreviewProps
         <div className="bill-footer-right">
           <table className="bill-summary-table">
             <tbody>
+              {invoice.discount && invoice.discount > 0 ? (
+                <>
+                  <tr>
+                    <td className="label">Sub Total (Gross)</td>
+                    <td className="amount">₹{formatCurrency(subTotalBeforeDiscount)}</td>
+                  </tr>
+                  <tr>
+                    <td className="label">Discount</td>
+                    <td className="amount">-₹{formatCurrency(invoice.discount)}</td>
+                  </tr>
+                </>
+              ) : null}
               <tr>
-                <td className="label">Sub Total</td>
+                <td className="label">Taxable Sub Total</td>
                 <td className="amount">₹{formatCurrency(subTotal)}</td>
               </tr>
               <tr>
-                <td className="label">CGST ({cgstPct}%):</td>
+                <td className="label">CGST{cgstPct !== '' ? ` (${cgstPct}%)` : ''}:</td>
                 <td className="amount">₹{formatCurrency(cgst)}</td>
               </tr>
               <tr>
-                <td className="label">SGST ({sgstPct}%):</td>
+                <td className="label">SGST{sgstPct !== '' ? ` (${sgstPct}%)` : ''}:</td>
                 <td className="amount">₹{formatCurrency(sgst)}</td>
               </tr>
               {Math.abs(roundOff) > 0.001 && (

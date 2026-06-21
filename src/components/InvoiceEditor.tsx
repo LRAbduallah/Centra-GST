@@ -53,9 +53,14 @@ export default function InvoiceEditor({
         description: '',
         qty: 1,
         netRate: '',
-        gstPct: null,
+        gstPct: prof.gstRate,
+        unit: 'PCS',
       },
     ],
+    customerAddress: '',
+    placeOfSupply: '',
+    discount: 0,
+    reverseCharge: 'No' as 'Yes' | 'No',
   });
 
   const [inv, setInv] = useState(() => createInitialState(profile));
@@ -142,7 +147,8 @@ export default function InvoiceEditor({
         description: prod.name,
         qty: 1,
         netRate: prod.rate || '',
-        gstPct: null,
+        gstPct: prod.gstPct !== undefined && prod.gstPct !== null ? prod.gstPct : profile.gstRate,
+        unit: prod.unit || 'PCS',
       }));
 
       if (isFirstBlank) {
@@ -186,7 +192,8 @@ export default function InvoiceEditor({
           description: pendingCatalogAdd.name,
           qty: 1,
           netRate: pendingCatalogAdd.rate || '',
-          gstPct: null,
+          gstPct: pendingCatalogAdd.gstPct !== undefined && pendingCatalogAdd.gstPct !== null ? pendingCatalogAdd.gstPct : profile.gstRate,
+          unit: pendingCatalogAdd.unit || 'PCS',
         };
 
         if (isFirstBlank) {
@@ -205,7 +212,7 @@ export default function InvoiceEditor({
     }
   }, [pendingCatalogAdd, clearPendingCatalogAdd]);
 
-  const totals = useMemo(() => calcTotals(inv.items, profile), [inv.items, profile]);
+  const totals = useMemo(() => calcTotals(inv.items, profile, inv.discount), [inv.items, profile, inv.discount]);
 
   const updateInvField = (k: keyof typeof inv, v: any) => {
     setInv((prev) => ({ ...prev, [k]: v }));
@@ -234,7 +241,8 @@ export default function InvoiceEditor({
           description: '',
           qty: 1,
           netRate: '',
-          gstPct: null,
+          gstPct: profile.gstRate,
+          unit: 'PCS',
         },
       ],
     }));
@@ -292,6 +300,8 @@ export default function InvoiceEditor({
     updateItemField(rowIdx, 'description', prod.name);
     updateItemField(rowIdx, 'hsn', prod.hsn || '');
     updateItemField(rowIdx, 'netRate', prod.rate || '');
+    updateItemField(rowIdx, 'gstPct', prod.gstPct !== undefined && prod.gstPct !== null ? prod.gstPct : profile.gstRate);
+    updateItemField(rowIdx, 'unit', prod.unit || 'PCS');
     setActiveCatalogRow(null);
     setCatalogSearch('');
   };
@@ -317,6 +327,19 @@ export default function InvoiceEditor({
       return;
     }
 
+    setConfirmModal({
+      title: 'Confirm Invoice Generation',
+      message: `Are you sure you want to generate and save Invoice Number ${inv.invoiceNo} for ₹${totals.grandTotal.toFixed(2)}?`,
+      confirmLabel: 'Generate & Save',
+      variant: 'default',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await saveAndGenerateInvoice();
+      }
+    });
+  };
+
+  const saveAndGenerateInvoice = async () => {
     const savedInvoice: Invoice = {
       id: crypto.randomUUID(),
       profileId: profile.id,
@@ -325,10 +348,20 @@ export default function InvoiceEditor({
       customerGst: inv.customerGst,
       date: inv.date,
       invoiceNo: inv.invoiceNo,
-      items: inv.items.map(it => ({ ...it, qty: Number(it.qty) || 1, netRate: Number(it.netRate) || 0 })),
+      items: inv.items.map(it => ({ 
+        ...it, 
+        qty: Number(it.qty) || 1, 
+        netRate: Number(it.netRate) || 0,
+        gstPct: it.gstPct !== undefined ? it.gstPct : null,
+        unit: it.unit || 'PCS'
+      })),
       profileSnapshot: { ...profile },
       generatedAt: Date.now(),
       status: 'generated',
+      customerAddress: inv.customerAddress,
+      placeOfSupply: inv.placeOfSupply,
+      discount: Number(inv.discount) || 0,
+      reverseCharge: inv.reverseCharge,
     };
 
     // Check and efficiently auto-add new items to profile catalog (time O(N) complexity)
@@ -347,6 +380,8 @@ export default function InvoiceEditor({
           hsn: item.hsn || '',
           rate: String(item.netRate || '0'),
           category: 'Auto-Added',
+          gstPct: item.gstPct !== undefined ? item.gstPct : null,
+          unit: item.unit || 'PCS',
         };
         currentCatalog.push(newProduct);
         catalogNameMap.set(cleanName.toLowerCase(), newProduct);
@@ -511,7 +546,7 @@ export default function InvoiceEditor({
         <div className="form-section">
           <div className="form-section-title">Customer Details</div>
           
-          <div className="form-grid single">
+          <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Customer Name *</label>
               <input
@@ -521,6 +556,31 @@ export default function InvoiceEditor({
                 disabled={isGenerated}
                 value={inv.customerName}
                 onChange={(e) => updateInvField('customerName', e.target.value.toUpperCase())}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Place of Supply (State / Code)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. TAMIL NADU (33)"
+                disabled={isGenerated}
+                value={inv.placeOfSupply}
+                onChange={(e) => updateInvField('placeOfSupply', e.target.value.toUpperCase())}
+              />
+            </div>
+          </div>
+
+          <div className="form-grid single">
+            <div className="form-group">
+              <label className="form-label">Customer Billing / Shipping Address</label>
+              <textarea
+                className="form-input"
+                style={{ height: '54px', resize: 'none', padding: '8px' }}
+                placeholder="Enter complete customer address..."
+                disabled={isGenerated}
+                value={inv.customerAddress}
+                onChange={(e) => updateInvField('customerAddress', e.target.value)}
               />
             </div>
           </div>
@@ -584,18 +644,20 @@ export default function InvoiceEditor({
             <table className="editor-table">
               <thead>
                 <tr>
-                  <th style={{ width: '18%' }}>HSN</th>
-                  <th style={{ width: '40%' }}>Description</th>
-                  <th style={{ width: '12%' }}>Qty</th>
-                  <th style={{ width: '18%' }}>Net Price</th>
-                  <th style={{ width: '12%' }}></th>
+                  <th style={{ width: '12%' }}>{profile.hsnLabel || 'HSN'}</th>
+                  <th style={{ width: '32%' }}>Description</th>
+                  <th style={{ width: '10%' }}>Qty</th>
+                  <th style={{ width: '10%' }}>Unit</th>
+                  <th style={{ width: '15%' }}>Rate (Incl. Tax)</th>
+                  <th style={{ width: '13%' }}>GST</th>
+                  <th style={{ width: '8%' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {inv.items.map((item, idx) => {
-                  const itemGst = item.gstPct !== null ? item.gstPct : profile.gstRate;
-                  const itemNet = parseFloat(item.netRate as string) || 0;
-                  const itemRateInclTax = itemNet * (1 + itemGst / 100);
+                  const itemGst = item.gstPct !== null && item.gstPct !== undefined ? item.gstPct : profile.gstRate;
+                  const itemRateInclTax = parseFloat(item.netRate as string) || 0;
+                  const itemNet = itemRateInclTax / (1 + itemGst / 100);
                   const itemTotal = itemRateInclTax * (Number(item.qty) || 0);
 
                   return (
@@ -604,7 +666,7 @@ export default function InvoiceEditor({
                         <input
                           type="text"
                           className="table-input"
-                          placeholder="HSN"
+                          placeholder={profile.hsnLabel || 'HSN'}
                           disabled={isGenerated}
                           value={item.hsn}
                           onChange={(e) => updateItemField(idx, 'hsn', e.target.value)}
@@ -663,6 +725,16 @@ export default function InvoiceEditor({
                       </td>
                       <td>
                         <input
+                          type="text"
+                          className="table-input"
+                          placeholder="PCS"
+                          disabled={isGenerated}
+                          value={item.unit || ''}
+                          onChange={(e) => updateItemField(idx, 'unit', e.target.value.toUpperCase())}
+                        />
+                      </td>
+                      <td>
+                        <input
                           type="number"
                           className="table-input num"
                           placeholder="0.00"
@@ -671,6 +743,23 @@ export default function InvoiceEditor({
                           onChange={(e) => updateItemField(idx, 'netRate', e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, idx)}
                         />
+                      </td>
+                      <td>
+                        <select
+                          className="table-input"
+                          style={{ padding: '4px', background: 'var(--bg-input)', color: 'var(--color-text)', border: 'none', borderRadius: 'var(--radius-sm)' }}
+                          disabled={isGenerated}
+                          value={item.gstPct}
+                          onChange={(e) => {
+                            updateItemField(idx, 'gstPct', Number(e.target.value));
+                          }}
+                        >
+                          {profile.gstRate !== 18 && profile.gstRate !== 5 && (
+                            <option value={profile.gstRate}>{profile.gstRate}%</option>
+                          )}
+                          <option value="18">18%</option>
+                          <option value="5">5%</option>
+                        </select>
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <button
@@ -704,12 +793,35 @@ export default function InvoiceEditor({
               </button>
             </div>
           )}
+
+
         </div>
 
         {/* Section: Live Calculations Totals */}
         <div className="form-totals-panel">
+          {totals.discount > 0 && (
+            <div className="totals-row">
+              <span>Sub Total (Before Discount)</span>
+              <span className="val">₹{totals.subTotalBeforeDiscount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="totals-row" style={{ alignItems: 'center' }}>
+            <span>Discount (₹)</span>
+            <span className="val">
+              <input
+                type="number"
+                className="table-input num"
+                style={{ width: '80px', textAlign: 'right', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '4px', background: 'var(--bg-input)', color: 'var(--color-text)' }}
+                placeholder="0.00"
+                min="0"
+                disabled={isGenerated}
+                value={inv.discount || ''}
+                onChange={(e) => updateInvField('discount', e.target.value === '' ? 0 : Number(e.target.value))}
+              />
+            </span>
+          </div>
           <div className="totals-row">
-            <span>Sub Total (Before Tax)</span>
+            <span>Taxable Sub Total (After Discount)</span>
             <span className="val">₹{totals.subTotal.toFixed(2)}</span>
           </div>
           <div className="totals-row">
@@ -717,11 +829,11 @@ export default function InvoiceEditor({
             <span className="val">₹{totals.totalGst.toFixed(2)}</span>
           </div>
           <div className="totals-row">
-            <span>CGST ({totals.cgstPct}%)</span>
+            <span>CGST{totals.cgstPct !== '' ? ` (${totals.cgstPct}%)` : ''}</span>
             <span className="val">₹{totals.cgst.toFixed(2)}</span>
           </div>
           <div className="totals-row">
-            <span>SGST ({totals.sgstPct}%)</span>
+            <span>SGST{totals.sgstPct !== '' ? ` (${totals.sgstPct}%)` : ''}</span>
             <span className="val">₹{totals.sgst.toFixed(2)}</span>
           </div>
           {Math.abs(totals.roundOff) > 0.001 && (

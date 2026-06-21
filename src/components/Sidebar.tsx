@@ -1,6 +1,6 @@
 import React from 'react';
 import { Profile } from '../types';
-import { PlusCircle, History, Settings, FileText, Menu, Sun, Moon } from 'lucide-react';
+import { PlusCircle, History, Settings, FileText, Menu, Sun, Moon, TrendingUp } from 'lucide-react';
 import logoImg from '../assets/logo.svg';
 
 interface SidebarProps {
@@ -38,6 +38,11 @@ export default function Sidebar({
       key: 'history',
       label: 'Invoice History',
       icon: <History size={16} />,
+    },
+    {
+      key: 'reports',
+      label: 'Reports',
+      icon: <TrendingUp size={16} />,
     },
     {
       key: 'settings',
