@@ -1,6 +1,6 @@
 {
   "name": "Centra-GST",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "GST-compliant tax bill desktop application",
   "author": "CentraGST Dev <rafiabullah0@gmail.com>",
   "main": "electron/main.js",
