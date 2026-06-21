@@ -17,14 +17,17 @@ export interface Profile {
   invoiceFormat: 'PREFIX_COUNTER' | 'YEAR_COUNTER';
   bankDetails: string;
   terms: string;
+  hsnLabel?: string;
 }
 
 export interface Product {
   id?: string;
   name: string;
   hsn: string;
-  rate: string; // net rate pre-tax
+  rate: string; // tax-inclusive rate
   category: string;
+  gstPct?: number | null;
+  unit?: string;
 }
 
 export interface LineItem {
@@ -34,6 +37,7 @@ export interface LineItem {
   qty: number;
   netRate: string | number;
   gstPct: number | null; // null means inherit global GST
+  unit?: string;
 }
 
 export interface Invoice {
@@ -48,6 +52,10 @@ export interface Invoice {
   profileSnapshot: Profile;
   generatedAt: number;
   status: 'draft' | 'generated';
+  customerAddress?: string;
+  placeOfSupply?: string;
+  discount?: number;
+  reverseCharge?: 'Yes' | 'No';
 }
 
 export interface ElectronAPI {

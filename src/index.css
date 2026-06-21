@@ -1622,3 +1622,13 @@ body {
     page-break-after: avoid;
   }
 }
+
+/* Hide native number input spinners in UI, keeping keyboard arrow functionality */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}

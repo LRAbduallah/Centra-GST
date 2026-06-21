@@ -14,6 +14,7 @@ interface SettingsScreenProps {
   onUpdateCatalog: (newCatalog: Product[]) => void;
   onAddToInvoice: (prod: Product) => void;
   showToast: (msg: string, type?: 'success' | 'error') => void;
+  profile?: Profile;
 }
 
 export default function SettingsScreen({
@@ -25,6 +26,7 @@ export default function SettingsScreen({
   onUpdateCatalog,
   onAddToInvoice,
   showToast,
+  profile,
 }: SettingsScreenProps) {
   const [activeTab, setActiveTab] = useState<'profiles' | 'catalog' | 'backup'>('profiles');
   const [editingProfile, setEditingProfile] = useState<Profile | undefined>(undefined);
@@ -39,7 +41,14 @@ export default function SettingsScreen({
 
   // Catalog tab sub-states
   const [catEditingIndex, setCatEditingIndex] = useState<number | null>(null);
-  const [catForm, setCatForm] = useState<Product>({ name: '', hsn: '', rate: '', category: '' });
+  const [catForm, setCatForm] = useState<Product>({ name: '', hsn: '', rate: '', category: '', gstPct: profile?.gstRate || 18, unit: 'PCS' });
+
+  // Sync default GST rate when profile or editing index resets
+  React.useEffect(() => {
+    if (catEditingIndex === null) {
+      setCatForm((f) => ({ ...f, gstPct: profile?.gstRate || 18 }));
+    }
+  }, [profile?.gstRate, catEditingIndex]);
 
   const saveCatalogItem = () => {
     if (!catForm.name.trim()) {
@@ -48,20 +57,24 @@ export default function SettingsScreen({
     }
 
     let updatedCatalog = [...catalog];
+    const resolvedGst = catForm.gstPct !== null && catForm.gstPct !== undefined ? catForm.gstPct : (profile?.gstRate || 18);
+    const finalItem: Product = {
+      ...catForm,
+      id: catForm.id || crypto.randomUUID(),
+      gstPct: resolvedGst
+    };
+
     if (catEditingIndex !== null) {
-      updatedCatalog[catEditingIndex] = { ...catForm };
+      updatedCatalog[catEditingIndex] = finalItem;
       showToast('Product updated!', 'success');
     } else {
-      updatedCatalog.push({
-        id: crypto.randomUUID(),
-        ...catForm
-      });
+      updatedCatalog.push(finalItem);
       showToast('Product added!', 'success');
     }
 
     onUpdateCatalog(updatedCatalog);
     setCatEditingIndex(null);
-    setCatForm({ name: '', hsn: '', rate: '', category: '' });
+    setCatForm({ name: '', hsn: '', rate: '', category: '', gstPct: profile?.gstRate || 18, unit: 'PCS' });
   };
 
   const deleteCatalogItem = (index: number) => {
@@ -82,7 +95,16 @@ export default function SettingsScreen({
 
   const editCatalogItem = (index: number) => {
     setCatEditingIndex(index);
-    setCatForm({ ...catalog[index] });
+    const item = catalog[index];
+    setCatForm({
+      id: item.id,
+      name: item.name,
+      hsn: item.hsn,
+      rate: item.rate,
+      category: item.category,
+      gstPct: item.gstPct !== undefined && item.gstPct !== null ? item.gstPct : (profile?.gstRate || 18),
+      unit: item.unit || 'PCS'
+    });
   };
 
   // CSV Import/Export
@@ -91,12 +113,14 @@ export default function SettingsScreen({
       showToast('Catalog is empty, nothing to export', 'error');
       return;
     }
-    const headers = ['Product Name', 'HSN Code', 'Default Net Rate', 'Category'];
+    const headers = ['Product Name', 'HSN Code', 'Default Net Rate', 'Category', 'GST Rate (%)', 'Unit'];
     const rows = catalog.map((item) => [
       `"${item.name.replace(/"/g, '""')}"`,
       `"${item.hsn}"`,
       item.rate,
       `"${item.category.replace(/"/g, '""')}"`,
+      item.gstPct !== undefined && item.gstPct !== null ? item.gstPct : '',
+      `"${(item.unit || 'PCS').replace(/"/g, '""')}"`,
     ]);
     const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -138,9 +162,12 @@ export default function SettingsScreen({
             const rateRaw = matches[2]?.replace(/^"|"$/g, '').trim() || '0';
             const rate = isNaN(parseFloat(rateRaw)) ? '0' : rateRaw;
             const category = matches[3]?.replace(/^"|"$/g, '').trim() || '';
+            const gstPctRaw = matches[4]?.replace(/^"|"$/g, '').trim() || '';
+            const gstPct = gstPctRaw === '' || isNaN(parseFloat(gstPctRaw)) ? (profile?.gstRate || 18) : parseFloat(gstPctRaw);
+            const unit = matches[5]?.replace(/^"|"$/g, '').trim() || 'PCS';
 
             if (name) {
-              newItems.push({ name, hsn, rate, category });
+              newItems.push({ name, hsn, rate, category, gstPct, unit });
             }
           }
         }
@@ -393,11 +420,11 @@ export default function SettingsScreen({
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">HSN Code</label>
+                    <label className="form-label">{profile?.hsnLabel || 'HSN'} Code</label>
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="e.g. 90049090"
+                      placeholder={`e.g. ${profile?.hsnLabel || 'HSN'}`}
                       value={catForm.hsn}
                       onChange={(e) => setCatForm((f) => ({ ...f, hsn: e.target.value }))}
                     />
@@ -406,7 +433,7 @@ export default function SettingsScreen({
 
                 <div className="form-grid">
                   <div className="form-group">
-                    <label className="form-label">Default Net Rate (Pre-tax) (₹)</label>
+                    <label className="form-label">Default Price (Incl. Tax) (₹)</label>
                     <input
                       type="number"
                       className="form-input"
@@ -427,6 +454,36 @@ export default function SettingsScreen({
                   </div>
                 </div>
 
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">GST Rate Slab</label>
+                    <select
+                      className="form-input"
+                      style={{ background: 'var(--bg-input)', color: 'var(--color-text)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '8px' }}
+                      value={catForm.gstPct === null || catForm.gstPct === undefined ? profile?.gstRate || 18 : catForm.gstPct}
+                      onChange={(e) => {
+                        setCatForm((f) => ({ ...f, gstPct: Number(e.target.value) }));
+                      }}
+                    >
+                      {profile?.gstRate !== 18 && profile?.gstRate !== 5 && (
+                        <option value={profile?.gstRate}>{profile?.gstRate}% GST Slab</option>
+                      )}
+                      <option value="18">18% GST Slab</option>
+                      <option value="5">5% GST Slab</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Unit of Measurement (UOM)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. PCS, KG, BOX, MTR"
+                      value={catForm.unit || ''}
+                      onChange={(e) => setCatForm((f) => ({ ...f, unit: e.target.value.toUpperCase() }))}
+                    />
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                   <button className="btn btn-primary btn-sm" onClick={saveCatalogItem}>
                     {catEditingIndex !== null ? 'Update Product' : 'Add Product'}
@@ -436,7 +493,7 @@ export default function SettingsScreen({
                       className="btn btn-ghost btn-sm"
                       onClick={() => {
                         setCatEditingIndex(null);
-                        setCatForm({ name: '', hsn: '', rate: '', category: '' });
+                        setCatForm({ name: '', hsn: '', rate: '', category: '', gstPct: profile?.gstRate || 18, unit: 'PCS' });
                       }}
                     >
                       Cancel
@@ -478,7 +535,7 @@ export default function SettingsScreen({
                         <div className="details">
                           <h4>{item.name}</h4>
                           <p>
-                            HSN: {item.hsn || 'None'} • Rate: ₹{Number(item.rate || 0).toFixed(2)} • Category:{' '}
+                            {profile?.hsnLabel || 'HSN'}: {item.hsn || 'None'} • Rate: ₹{Number(item.rate || 0).toFixed(2)} (Incl. Tax) • GST: {item.gstPct !== undefined && item.gstPct !== null ? `${item.gstPct}%` : `${profile?.gstRate || 18}%`} • Unit: {item.unit || 'PCS'} • Category:{' '}
                             {item.category || 'General'}
                           </p>
                         </div>

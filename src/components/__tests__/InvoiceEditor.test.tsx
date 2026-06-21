@@ -33,14 +33,14 @@ beforeEach(() => {
 // Live Totals & Form Validation
 // ─────────────────────────────────────────────
 describe('InvoiceEditor — Live Totals & Form', () => {
-  it('C1: entering netRate=100 shows grand total of ₹118.00', async () => {
+  it('C1: entering netRate=100 shows grand total of ₹100.00', async () => {
     renderEditor();
     const rateInput = screen.getAllByPlaceholderText('0.00')[0];
     await userEvent.clear(rateInput);
     await userEvent.type(rateInput, '100');
-    // Grand total row should show ₹118.00 (18% GST)
+    // Grand total row should show ₹100.00 (tax-inclusive)
     await waitFor(() => {
-      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹118.00');
+      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹100.00');
     });
   });
 
@@ -53,7 +53,7 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     await userEvent.clear(qtyInput);
     await userEvent.type(qtyInput, '3');
     await waitFor(() => {
-      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹354.00');
+      expect(screen.getByText(/Grand Total/i).closest('div')).toHaveTextContent('₹300.00');
     });
   });
 
@@ -92,6 +92,9 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     // Generate
     const btn = screen.getByText(/Generate Invoice/i);
     await userEvent.click(btn);
+    // Confirm inside the modal
+    await waitFor(() => screen.getByText(/Generate & Save/i));
+    await userEvent.click(screen.getByText(/Generate & Save/i));
     await waitFor(() => {
       expect(customerInput).toBeDisabled();
     });
@@ -106,6 +109,9 @@ describe('InvoiceEditor — Live Totals & Form', () => {
     const rateInput = screen.getAllByPlaceholderText('0.00')[0];
     fireEvent.change(rateInput, { target: { value: '100' } });
     await userEvent.click(screen.getByText(/Generate Invoice/i));
+    // Confirm inside the modal
+    await waitFor(() => screen.getByText(/Generate & Save/i));
+    await userEvent.click(screen.getByText(/Generate & Save/i));
     await waitFor(() => screen.getByText(/New Invoice/i));
     // Click "New Invoice" — this opens the ConfirmModal
     await userEvent.click(screen.getByText(/New Invoice/i));

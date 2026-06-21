@@ -447,6 +447,7 @@ export default function App() {
               onUpdateCatalog={updateCatalog}
               onAddToInvoice={handleAddProductToInvoice}
               showToast={showToast}
+              profile={activeProfile || undefined}
             />
           )}
         </div>
